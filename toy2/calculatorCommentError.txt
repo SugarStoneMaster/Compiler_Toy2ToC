@@ -1,0 +1,50 @@
+% Scrivere un programma Toy2 che
+  visualizzi un menu in cui un utente può scegliere l' operazione aritmetica da svolgere
+  richieda all'utente gli input (interi o double) necessari per svolgere l'operazione scelta
+  esegua l'operazione, restituisca il risultato e chieda se si vuol continuare
+  all'input 0 oppure 1 il programma  conclude oppure mostra il menu iniziale, rispettivamente.
+  N.B. si utilizzino almeno due funzioni. In generale, si cerchi di utilizzare tutte le caratteristiche del linguaggio.
+%
+
+
+proc main():
+    var a, b, result : real; op : string; continue ^= true;\
+
+    loop(@a, @b, @result, @op, @continue);
+
+endproc
+
+%commento non chiuso
+
+proc loop(out a: real, out b: real, out result: real, out op: string, out continue: boolean):
+    while continue = true do
+        <-- "Che operazione aritmetica vuoi svolgere? (+, -, *, /)" $(op);
+        while op <> "+" && op <> "-" && op <> "*" && op <> "/" do
+            <-- "Devi inserire un'operazione aritmetica consentita (+, -, *, /)" $(op);
+        endwhile
+        <-- "inserisci il primo numero" $(a) " inserisci il secondo numero" $(b);
+        result ^= calculate(a, b, op);
+        -->! "Il risultato è " $(result);
+        <-- "Vuoi continuare? (0: no, 1: sì)" $(a);
+        if a = 0 then
+            continue = false;
+        endif
+    endwhile;
+endproc
+
+
+func calculate(a: real, b: real, op: string) -> real:
+    var result: real;\
+
+    if op = "+" then
+        result ^= a + b;
+    elseif op = "-" then
+        result ^= a - b;
+    elseif op = "*" then
+        result ^= a * b;
+    elseif op = "/" then
+        result ^= a / b;
+    endif;
+
+    return result;
+endfunc

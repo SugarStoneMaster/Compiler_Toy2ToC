@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="CalculatorStringError" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="esercitazione4.Tester" />
+    <module name="Iemmino_es4" />
+    <option name="PROGRAM_PARAMETERS" value="toy2/calculatorStringError.txt" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,0 +1,200 @@
+import java_cup.runtime.*;
+import nodes.*;
+import nodes.statements.*;
+import java.util.List;
+import java.util.ArrayList;
+
+
+
+
+
+terminal VAR, SEMI, COLON, ASSIGN, COMMA, ENDVAR,
+         TRUE, FALSE, FUNCTION, ENDFUNCTION, LPAR, RPAR, TYPERETURN, PROCEDURE, ENDPROCEDURE,
+         OUT, IF, THEN, ELSE, ENDIF, ELIF, WHILE, DO, ENDWHILE, WRITE, WRITERETURN,
+         DOLLARSIGN, READ, REF, PLUS, MINUS, TIMES, DIV, EQ, NE, LT, LE, GT, GE, AND, OR, NOT, REAL,
+         INTEGER, STRING, BOOLEAN, RETURN;
+terminal String ID, STRING_CONST;
+terminal String INTEGER_CONST;
+terminal String REAL_CONST;
+
+
+non terminal Program, Iter1, Iter2, VarDecl, Decls, Ids, Consts, Const, Type, Function, FuncParams,
+              OtherFuncParams, Procedure, ProcParams, OtherProcParams, ProcParamId, Body,
+              Stat, FunCall, ProcCall, IfStat, Elifs, Elif, Else, WhileStat, IOArgs,
+              ProcExprs, Exprs, Expr, Types;
+
+precedence left OR;
+precedence left AND;
+precedence nonassoc EQ, NE, LT, LE, GT, GE;
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV;
+
+
+Program ::= Iter1:varFuncs Procedure:mainProc Iter2:varFuncProc   {:
+                                                  List<VarDeclNode> varDeclarations = new ArrayList<>();
+                                                  List<FunctionNode> functions = new ArrayList<>();
+                                                  List<ProcedureNode> procedures = new ArrayList<>(List.of(((ProcedureNode) mainProc)));
+
+                                                  for (Node node : (List<Node>) varFuncs) {
+                                                      if (node instanceof VarDeclNode) varDeclarations.add((VarDeclNode) node);
+                                                      else if (node instanceof FunctionNode) functions.add((FunctionNode) node);
+                                                  }
+
+                                                  for (Node node : (List<Node>) varFuncProc) {
+                                                      if (node instanceof VarDeclNode) varDeclarations.add((VarDeclNode) node);
+                                                      else if (node instanceof FunctionNode) functions.add((FunctionNode) node);
+                                                      else if (node instanceof ProcedureNode) procedures.add((ProcedureNode) node);
+                                                  }
+
+                                                  RESULT = new ProgramNode(varDeclarations, functions, procedures);
+                                         :}
+        ;
+
+Iter1 ::= VarDecl:vardecl Iter1:nodes {:((ArrayList<Node>) nodes).add(0, (VarDeclNode) vardecl); RESULT = nodes;:}
+      | Function:func Iter1:nodes {:((ArrayList<Node>) nodes).add(0, (FunctionNode) func); RESULT = nodes;:}
+      | /* empty */ {:RESULT = new ArrayList<Node>();:}
+      ;
+
+Iter2 ::= VarDecl:vardecl Iter2:nodes {:((ArrayList<Node>) nodes).add(0, (VarDeclNode) vardecl); RESULT = nodes;:}
+      | Function:func Iter2:nodes {:((ArrayList<Node>) nodes).add(0, (FunctionNode) func); RESULT =  nodes;:}
+      | Procedure:proc Iter2:nodes {:((ArrayList<Node>) nodes).add(0, (ProcedureNode) proc); RESULT =  nodes;:}
+      | /* empty */ {:RESULT = new ArrayList<Node>();:}
+      ;
+
+VarDecl ::= VAR Decls:decls {:VarDeclNode varDeclNode = new VarDeclNode((List<VarSingleDeclNode>) decls); RESULT =  varDeclNode;:}
+        ;
+
+Decls ::= Ids:ids COLON Type:type SEMI Decls:decls {:((ArrayList<VarSingleDeclNode>)decls).add(0, new VarSingleDeclNode((ArrayList<IdNode>) ids, (String) type, null)); RESULT = decls;:}
+	| Ids:ids ASSIGN Consts:consts SEMI Decls:decls {:((ArrayList<VarSingleDeclNode>)decls).add(0, new VarSingleDeclNode((ArrayList<IdNode>) ids, null, (ArrayList<ConstNode>) consts)); RESULT = decls;:}
+	| Ids:ids COLON Type:type SEMI ENDVAR {:ArrayList<VarSingleDeclNode> declarations = new ArrayList<VarSingleDeclNode>(); declarations.add(0, new VarSingleDeclNode((ArrayList<IdNode>) ids, (String) type,  null)); RESULT = declarations;:}
+	| Ids:ids ASSIGN Consts:consts SEMI ENDVAR {:ArrayList<VarSingleDeclNode> declarations = new ArrayList<VarSingleDeclNode>(); declarations.add(0, new VarSingleDeclNode((ArrayList<IdNode>) ids, null, (ArrayList<ConstNode>) consts)); RESULT = declarations;:}
+	;
+
+Ids ::= ID:name COMMA Ids:ids {:((ArrayList<IdNode>) ids).add(0, new IdNode((String) name)); RESULT = ids;:}
+    | ID: name {:ArrayList<IdNode> ids = new ArrayList<IdNode>();  ids.add(0, new IdNode((String) name)); RESULT = ids;:}
+    ;
+
+Consts ::= Const:c COMMA Consts:consts {:((ArrayList<ConstNode>) consts).add(0, (ConstNode) c); RESULT = consts;:}
+	| Const:c {:ArrayList<ConstNode> consts = new ArrayList<ConstNode>();  consts.add(0, (ConstNode) c); RESULT = consts;:}
+	;
+
+Const ::= REAL_CONST:value {:RESULT = new ConstNode(Float.parseFloat(value));:}
+	| INTEGER_CONST:value {:RESULT = new ConstNode(Integer.parseInt(value));:}
+	| STRING_CONST:value {:RESULT = new ConstNode((String) value);:}
+	| TRUE                  {:RESULT = new ConstNode(true);:}
+	| FALSE                 {:RESULT = new ConstNode(false);:}
+	;
+
+Type ::= REAL:type {:RESULT =  "real";:}
+	| INTEGER:type {:RESULT =  "integer";:}
+	| STRING:type {:RESULT =  "string";:}
+	| BOOLEAN:type {:RESULT =  "boolean";:}
+	;
+
+Function ::= FUNCTION ID:name LPAR FuncParams:params RPAR TYPERETURN Types:types COLON Body:b ENDFUNCTION {:RESULT = new FunctionNode((String) name, (ArrayList<IdNode>) params, (ArrayList<String>) types, (BodyNode) b);:}
+          ;
+
+FuncParams ::= ID:name COLON Type:type OtherFuncParams:params {:IdNode param = new IdNode((String) name, false);  param.idType = (String) type; ((ArrayList<IdNode>) params).add(0, param); RESULT = params;:}
+	    | /* empty */ ;
+OtherFuncParams ::= COMMA ID:name COLON Type:type OtherFuncParams:params {:IdNode param = new IdNode((String) name, false);  param.idType = (String) type; ((ArrayList<IdNode>) params).add(0, param); RESULT = params;:}
+	    | /* empty */ {:RESULT = new ArrayList<IdNode>();:}
+	    ;
+
+Types ::= Type:type COMMA Types:types {:((ArrayList<String>) types).add(0, (String) type); RESULT = types;:}
+	| Type:type {:ArrayList<String> types = new ArrayList<String>();  types.add(0, (String) type); RESULT = types;:}
+	;
+
+Procedure ::= PROCEDURE ID:name LPAR ProcParams:params RPAR COLON Body:b ENDPROCEDURE {:RESULT = new ProcedureNode((String) name, (ArrayList<IdNode>) params, (BodyNode) b);:}
+           ;
+
+ProcParams ::= ProcParamId:param COLON Type:type OtherProcParams:params {:((IdNode) param).idType = (String) type; ((ArrayList<IdNode>) params).add(0, (IdNode) param); RESULT = params;:}
+	   | /* empty */
+	   ;
+OtherProcParams ::= COMMA ProcParamId:param COLON Type:type OtherProcParams:params {:((IdNode) param).idType = (String) type; ((ArrayList<IdNode>) params).add(0, (IdNode) param); RESULT = params;:}
+	   | /* empty */ {:RESULT = new ArrayList<IdNode>();:}
+	   ;
+
+ProcParamId ::= ID:name {:RESULT = new IdNode((String) name, false);:}
+	    | OUT ID:name {:RESULT = new IdNode((String) name, true);:}
+	    ;
+
+Body ::= VarDecl:decl Body:b {:((BodyNode) b).nodes.add(0, (VarDeclNode) decl); RESULT = b;:}
+	| Stat:stat Body:b {:((BodyNode) b).nodes.add(0, (StatementNode) stat); RESULT = b;:}
+	| /* empty */ {: RESULT = new BodyNode(new ArrayList<Node>());:}
+	;
+
+Stat ::= Ids:ids ASSIGN Exprs:exprs SEMI {:RESULT = new AssignStatementNode((ArrayList<IdNode>) ids, (ArrayList<ExprNode>) exprs);:}
+	 | ProcCall:stat  SEMI {:RESULT = stat;:}
+	 | RETURN Exprs:exprs SEMI {:RESULT = new ReturnStatementNode((ArrayList<ExprNode>) exprs);:}
+	 | WRITE IOArgs:args SEMI {:RESULT = new WriteStatementNode((ArrayList<ExprNode>) args, false);:}
+	 | WRITERETURN IOArgs:args SEMI {:RESULT = new WriteStatementNode((ArrayList<ExprNode>) args, true);:}
+	 | READ IOArgs:args SEMI {:RESULT = new ReadStatementNode((ArrayList<ExprNode>) args);:}
+	 | IfStat:stat SEMI {:RESULT = stat;:}
+	 | WhileStat:stat SEMI {:RESULT = stat;:}
+	 ;
+
+FunCall ::= ID:name LPAR Exprs:exprs RPAR     {:RESULT = new FunCallNode((String) name, (ArrayList<ExprNode>) exprs);:}
+         | ID:name LPAR RPAR   {:RESULT = new FunCallNode((String) name, null);:}
+         ;
+
+ProcCall ::= ID:name LPAR ProcExprs:arguments RPAR    {:RESULT = new ProcCallNode((String) name, (ArrayList<ProcArgumentNode>) arguments);:}
+         | ID:name LPAR RPAR   {:RESULT = new ProcCallNode((String) name, null);:}
+         ;
+
+IfStat ::= IF Expr:e THEN Body:b Elifs:elifs Else:els ENDIF {:RESULT = new IfStatementNode((ExprNode) e, (BodyNode) b, (ArrayList<ElifNode>) elifs, (BodyNode) els);:}
+        ;
+
+Elifs ::= Elif:e Elifs:elifs {:((ArrayList<ElifNode>) elifs).add(0, (ElifNode) e); RESULT = elifs;:}
+      | /* empty */ {: RESULT = new ArrayList<ElifNode>();:}
+      ;
+
+Elif ::= ELIF Expr:e THEN Body:b {: RESULT = new ElifNode((ExprNode) e, (BodyNode) b);:}
+      ;
+
+Else ::= ELSE Body:b {:RESULT =  b;:}
+     | /* empty */ ;
+
+WhileStat ::= WHILE Expr:e DO Body:b ENDWHILE {: RESULT = new WhileStatementNode((ExprNode) e, (BodyNode) b);:}
+           ;
+
+
+IOArgs ::= Expr:e          {:ArrayList<ExprNode> exprs = new ArrayList<ExprNode>();  exprs.add(0, (ExprNode) e); RESULT = exprs;:}
+       | Expr:e1 DOLLARSIGN LPAR Expr:e2 RPAR IOArgs:exprs {:((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e2); ((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e1); RESULT = exprs;:}
+       | DOLLARSIGN LPAR Expr:e RPAR IOArgs:exprs  {:((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e); RESULT = exprs;:}
+       | /* empty */ {:RESULT = new ArrayList<ExprNode>();:}
+       ;
+
+
+ProcExprs ::= Expr:e COMMA ProcExprs:arguments {:((ArrayList<ProcArgumentNode>) arguments).add(0, new ProcArgumentNode((ExprNode) e)); RESULT = arguments;:}
+	  | REF ID:name COMMA ProcExprs:arguments {:((ArrayList<ProcArgumentNode>) arguments).add(0, new ProcArgumentNode((String) name)); RESULT = arguments;:}
+      | Expr:e {:ArrayList<ProcArgumentNode> arguments = new ArrayList<ProcArgumentNode>();  arguments.add(0, new ProcArgumentNode((ExprNode) e)); RESULT = arguments;:}
+	  | REF ID:name {:ArrayList<ProcArgumentNode> arguments = new ArrayList<ProcArgumentNode>();  arguments.add(0, new ProcArgumentNode((String) name)); RESULT = arguments;:}
+	  ;
+
+Exprs ::= Expr:e COMMA Exprs:exprs {:((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e); RESULT = exprs;:}
+	| Expr:e                       {: ArrayList<ExprNode> exprs = new ArrayList<ExprNode>();   exprs.add(0, (ExprNode) e); RESULT = exprs;:}
+	;
+
+Expr ::= FunCall:fun    {:RESULT = new ExprNode("funcall", (FunCallNode) fun);:}
+	| REAL_CONST:val    {:RESULT = new ExprNode("real", new ConstNode(Float.parseFloat(val)));:}
+    | INTEGER_CONST:val {:RESULT = new ExprNode("integer", new ConstNode(Integer.parseInt(val)));:}
+	| STRING_CONST:val  {:RESULT = new ExprNode("string", new ConstNode((String) val));:}
+	| ID:name            {:RESULT = new ExprNode("id", new IdNode((String) name));:}
+    | TRUE              {:RESULT = new ExprNode("true", new ConstNode(true));:}
+    | FALSE             {:RESULT = new ExprNode("false", new ConstNode(false));:}
+    | Expr:e1  PLUS Expr:e2 {:RESULT = new ExprNode("add", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  MINUS Expr:e2 {:RESULT = new ExprNode("sub", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  TIMES Expr:e2 {:RESULT = new ExprNode("times", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  DIV Expr:e2 {:RESULT = new ExprNode("div", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  AND Expr:e2 {:RESULT = new ExprNode("and", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  OR Expr:e2 {:RESULT = new ExprNode("or", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  GT Expr:e2 {:RESULT = new ExprNode("gt", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  GE Expr:e2 {:RESULT = new ExprNode("ge", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  LT Expr:e2 {:RESULT = new ExprNode("lt", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  LE Expr:e2 {:RESULT = new ExprNode("le", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  EQ Expr:e2 {:RESULT = new ExprNode("eq", (ExprNode) e1, (ExprNode) e2);:}
+	| Expr:e1  NE Expr:e2 {:RESULT = new ExprNode("ne", (ExprNode) e1, (ExprNode) e2);:}
+	| LPAR Expr:e RPAR {:RESULT = new ExprNode("pare", (ExprNode) e);:}
+	| MINUS Expr:e {:RESULT = new ExprNode("uminus", (ExprNode) e);:} %prec MINUS
+	| NOT Expr:e  {:RESULT = new ExprNode("not", (ExprNode) e);:}
+    ;
