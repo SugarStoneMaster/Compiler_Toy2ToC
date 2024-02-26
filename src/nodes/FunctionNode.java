@@ -1,5 +1,6 @@
 package nodes;
 
+import visitor.Environment;
 import visitor.Visitor;
 
 import java.util.List;

@@ -317,7 +317,7 @@ public class XMLVisitor implements Visitor{
         e = (Element) node.condition.accept(this);
         elifStatElement.appendChild(e);
 
-        e = (Element) node.bodyNode.accept(this);
+        e = (Element) node.body.accept(this);
         elifStatElement.appendChild(e);
 
         return elifStatElement;

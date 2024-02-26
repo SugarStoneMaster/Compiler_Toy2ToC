@@ -3,6 +3,7 @@ package nodes.statements;
 import nodes.BodyNode;
 import nodes.ElifNode;
 import nodes.ExprNode;
+import visitor.Environment;
 import visitor.Visitor;
 
 import java.util.List;

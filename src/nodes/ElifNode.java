@@ -6,11 +6,11 @@ import visitor.Visitor;
 public class ElifNode extends Node {
     public ExprNode condition;
 
-    public BodyNode bodyNode;
+    public BodyNode body;
 
-    public ElifNode(ExprNode condition, BodyNode bodyNode) {
+    public ElifNode(ExprNode condition, BodyNode body) {
         this.condition = condition;
-        this.bodyNode = bodyNode;
+        this.body = body;
     }
 
     @Override

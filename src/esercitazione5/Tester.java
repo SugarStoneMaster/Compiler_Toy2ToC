@@ -5,6 +5,7 @@ import esercitazione5.parser;
 import java_cup.runtime.Symbol;
 import nodes.ProgramNode;
 import org.w3c.dom.Document;
+import visitor.ScopingVisitor;
 import visitor.XMLVisitor;
 
 import java.io.FileReader;
@@ -36,9 +37,14 @@ public class Tester {
 
 		try {
 			ProgramNode programNode = (ProgramNode) parser.parse().value;
+
 			XMLVisitor xml = new XMLVisitor();
 			Document document = (Document) programNode.accept(xml);
 			xml.saveDocument(document);
+
+			ScopingVisitor scoping = new ScopingVisitor();
+			programNode.accept(scoping);
+
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
