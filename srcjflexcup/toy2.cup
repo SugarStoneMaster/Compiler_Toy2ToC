@@ -94,9 +94,9 @@ Type ::= REAL:type {:RESULT =  "real";:}
 Function ::= FUNCTION ID:name LPAR FuncParams:params RPAR TYPERETURN Types:types COLON Body:b ENDFUNCTION {:RESULT = new FunctionNode((String) name, (ArrayList<IdNode>) params, (ArrayList<String>) types, (BodyNode) b);:}
           ;
 
-FuncParams ::= ID:name COLON Type:type OtherFuncParams:params {:IdNode param = new IdNode((String) name, false);  param.idType = (String) type; ((ArrayList<IdNode>) params).add(0, param); RESULT = params;:}
+FuncParams ::= ID:name COLON Type:type OtherFuncParams:params {:IdNode param = new IdNode((String) name, false);  param.idType = (String) type; param.isFuncParam = (boolean) true; ((ArrayList<IdNode>) params).add(0, param); RESULT = params;:}
 	    | /* empty */ ;
-OtherFuncParams ::= COMMA ID:name COLON Type:type OtherFuncParams:params {:IdNode param = new IdNode((String) name, false);  param.idType = (String) type; ((ArrayList<IdNode>) params).add(0, param); RESULT = params;:}
+OtherFuncParams ::= COMMA ID:name COLON Type:type OtherFuncParams:params {:IdNode param = new IdNode((String) name, false);  param.idType = (String) type; param.isFuncParam = (boolean) true; ((ArrayList<IdNode>) params).add(0, param); RESULT = params;:}
 	    | /* empty */ {:RESULT = new ArrayList<IdNode>();:}
 	    ;
 
@@ -159,8 +159,8 @@ WhileStat ::= WHILE Expr:e DO Body:b ENDWHILE {: RESULT = new WhileStatementNode
 
 
 IOArgs ::= Expr:e          {:ArrayList<ExprNode> exprs = new ArrayList<ExprNode>();  exprs.add(0, (ExprNode) e); RESULT = exprs;:}
-       | Expr:e1 DOLLARSIGN LPAR Expr:e2 RPAR IOArgs:exprs {:((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e2); ((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e1); RESULT = exprs;:}
-       | DOLLARSIGN LPAR Expr:e RPAR IOArgs:exprs  {:((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e); RESULT = exprs;:}
+       | Expr:e1 DOLLARSIGN LPAR Expr:e2 RPAR IOArgs:exprs {:((ExprNode) e2).isDollar = true; ((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e2); ((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e1); RESULT = exprs;:}
+       | DOLLARSIGN LPAR Expr:e RPAR IOArgs:exprs  {:((ExprNode) e).isDollar = true; ((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e); RESULT = exprs;:}
        | /* empty */ {:RESULT = new ArrayList<ExprNode>();:}
        ;
 

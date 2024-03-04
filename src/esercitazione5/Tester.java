@@ -5,7 +5,9 @@ import esercitazione5.parser;
 import java_cup.runtime.Symbol;
 import nodes.ProgramNode;
 import org.w3c.dom.Document;
+import visitor.Environment;
 import visitor.ScopingVisitor;
+import visitor.SemanticAnalysisVisitor;
 import visitor.XMLVisitor;
 
 import java.io.FileReader;
@@ -43,7 +45,11 @@ public class Tester {
 			xml.saveDocument(document);
 
 			ScopingVisitor scoping = new ScopingVisitor();
-			programNode.accept(scoping);
+			Environment top = (Environment) programNode.accept(scoping);
+			System.out.println(top);
+
+			SemanticAnalysisVisitor semantic = new SemanticAnalysisVisitor(top);
+			programNode.accept(semantic);
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);

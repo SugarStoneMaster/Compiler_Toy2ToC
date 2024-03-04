@@ -73,7 +73,7 @@ import java_cup.runtime.Symbol;
 
 // See https://github.com/jflex-de/jflex/issues/222
 @SuppressWarnings("FallThrough")
-public class Lexer implements java_cup.runtime.Scanner {
+class Lexer implements java_cup.runtime.Scanner {
 
   /** This character denotes the end of file. */
   public static final int YYEOF = -1;
@@ -481,7 +481,7 @@ public class Lexer implements java_cup.runtime.Scanner {
    *
    * @param   in  the java.io.Reader to read input from.
    */
-  public Lexer(java.io.Reader in) {
+  Lexer(java.io.Reader in) {
     this.zzReader = in;
   }
 

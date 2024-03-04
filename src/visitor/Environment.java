@@ -1,22 +1,24 @@
 package visitor;
 
+import nodes.Node;
+
 import java.util.*;
 
 public class Environment {
-    public Hashtable<String, Record> table;
+    public Table<String, Record> table;
 
     public Environment prev;
 
     public Environment(Environment prev) {
-        table = new Hashtable<>();
+        table = new Table<>();
         this.prev = prev;
     }
 
-    public void addId(String name, String kind, String type, boolean isOut)
+    public void addId(String name, String kind, String type, boolean isOut, boolean isFuncParam)
     {
         Record entry = getFromThisTable(name);
         if(entry == null)
-            table.put(name, new Record(name, kind, type, isOut));
+            table.put(name, new Record(name, kind, type, isOut, isFuncParam));
         else if (entry != null && entry.kind.equals("variable"))
             throw new Error("Variable " + name + " already declared");
     }
@@ -55,7 +57,7 @@ public class Environment {
         return table.get(name);
     }
 
-    public Environment enterScope() {
+    public Environment createAndEnterScope() {
         return new Environment(this);
     }
 
@@ -69,7 +71,7 @@ public class Environment {
         StringBuffer string = new StringBuffer();
         int num = 1;
         for( Environment e = this; e != null; e = e.prev ) {
-            string.append("Tabella " + num++ + "\n");
+            string.append("<<" + e.table.name + ">>" + "\n");
             Set<String> keys = e.table.keySet();
             for(String key : keys)
             {

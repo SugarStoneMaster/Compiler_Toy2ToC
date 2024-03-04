@@ -118,10 +118,13 @@ public class XMLVisitor implements Visitor{
         Text text = (Text) document.createTextNode(node.name);
         functionElement.appendChild(text);
 
-        for(IdNode idNode : node.parameters)
+        if(node.parameters != null)
         {
-            e = (Element) idNode.accept(this);
-            functionElement.appendChild(e);
+            for(IdNode idNode : node.parameters)
+            {
+                e = (Element) idNode.accept(this);
+                functionElement.appendChild(e);
+            }
         }
 
         for(String returns : node.returnTypes)

@@ -13,5 +13,12 @@ public class ConstNode extends Node {
     public Object accept(Visitor visitor) {
         return visitor.visit(this);
     }
+
+    @Override
+    public String toString() {
+        return "ConstNode{" +
+                "value=" + value +
+                '}';
+    }
 }
 

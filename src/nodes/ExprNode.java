@@ -9,6 +9,8 @@ public class ExprNode extends Node{
 
     public Node node2;
 
+    public boolean isDollar;
+
     public ExprNode(String operator, Node node1) {
         this.operator = operator;
         this.node1 = node1;
@@ -23,5 +25,14 @@ public class ExprNode extends Node{
     @Override
     public Object accept(Visitor visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+        return "ExprNode{" +
+                "operator='" + operator + '\'' +
+                ", node1=" + node1 +
+                ", node2=" + node2 +
+                '}';
     }
 }

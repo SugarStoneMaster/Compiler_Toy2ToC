@@ -1,11 +1,4 @@
-% Scrivere un programma Toy2 che
-  visualizzi un menu in cui un utente può scegliere l' operazione aritmetica da svolgere
-  richieda all'utente gli input (interi o double) necessari per svolgere l'operazione scelta
-  esegua l'operazione, restituisca il risultato e chieda se si vuol continuare
-  all'input 0 oppure 1 il programma  conclude oppure mostra il menu iniziale, rispettivamente.
-  N.B. si utilizzino almeno due funzioni. In generale, si cerchi di utilizzare tutte le caratteristiche del linguaggio.
-%
-
+%stringa costante non chiusa%
 
 proc main():
     var a, b, result : real; op : string; continue ^= true;\

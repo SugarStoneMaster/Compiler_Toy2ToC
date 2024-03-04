@@ -15,13 +15,16 @@ public class Record {
 
     public boolean isOut; //variable that is referenced in a procedure as a parameter
 
+    public boolean isFuncParam;
+
 
     //for variables
-    public Record(String name, String kind, String type, boolean isOut) {
+    public Record(String name, String kind, String type, boolean isOut, boolean isFuncParam) {
         this.name = name;
         this.kind = kind;
         this.type = type;
         this.isOut = isOut;
+        this.isFuncParam = isFuncParam;
     }
 
     //for procedures
@@ -46,6 +49,7 @@ public class Record {
                     ", kind='" + kind + '\'' +
                     ", type='" + type + '\'' +
                     ", isOut=" + isOut +
+                    ", isFuncParam=" + isFuncParam +
                     '}';
         else if(kind.equals("procedure"))
             return "Record{" +
