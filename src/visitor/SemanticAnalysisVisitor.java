@@ -438,10 +438,16 @@ public class SemanticAnalysisVisitor implements Visitor{
             return "error";
 
         if(node.node1 instanceof ConstNode)
-            return node1Accept;
+        {
+            node.nodeType = (String) node1Accept;
+            return node.nodeType;
+        }
 
         if(node.node1 instanceof IdNode)
-            return node1Accept;
+        {
+            node.nodeType = (String) node1Accept;
+            return node.nodeType;
+        }
 
         if(node.node1 instanceof FunCallNode)
         {
@@ -455,12 +461,16 @@ public class SemanticAnalysisVisitor implements Visitor{
                 errors.add(new Error("Can't use function " + funCall.functionName + " with multiple return types in expressions"));
                 return "error";
             }*/
-            return node1Accept;
+            node.nodeType = (String) node1Accept;
+            return node.nodeType;
         }
 
         //parenthesis
         if(node.operator.equals("pare"))
-            return node1Accept;
+        {
+            node.nodeType = (String) node1Accept;
+            return node.nodeType;
+        }
 
         //unary operators
         if(node.operator.equals("uminus"))
@@ -469,7 +479,8 @@ public class SemanticAnalysisVisitor implements Visitor{
             if(returnTable.equals("error"))
                 errors.add(new Error("unary minus can't be used with " + node1Accept));
 
-            return returnTable;
+            node.nodeType = returnTable;
+            return node.nodeType;
         }
 
         if(node.operator.equals("not"))
@@ -478,12 +489,14 @@ public class SemanticAnalysisVisitor implements Visitor{
             if(returnTable.equals("error"))
                 errors.add(new Error("not operator can't be used with " + node1Accept));
 
-            return returnTable;
+            node.nodeType = returnTable;
+            return node.nodeType;
         }
 
 
 
-        return opTypeTable.searchOp(node.operator, (String) node1Accept, (String) node2Accept);
+        node.nodeType = opTypeTable.searchOp(node.operator, (String) node1Accept, (String) node2Accept);
+        return node.nodeType;
     }
 
     @Override

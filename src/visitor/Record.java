@@ -9,9 +9,9 @@ public class Record {
 
     public String type; //only for variables
 
-    public ArrayList<String> types; //only for functions and procedures
+    public ArrayList<String> types = new ArrayList<>(); //only for functions and procedures
 
-    public ArrayList<String> returnTypes; //only for functions
+    public ArrayList<String> returnTypes = new ArrayList<>(); //only for functions
 
     public boolean isOut; //variable that is referenced in a procedure as a parameter
 
@@ -43,29 +43,28 @@ public class Record {
     }
 
     public String toString(String kind) {
-        if(kind.equals("variable"))
-            return "Record{" +
+        return switch (kind) {
+            case "variable" -> "Record{" +
                     "name='" + name + '\'' +
                     ", kind='" + kind + '\'' +
                     ", type='" + type + '\'' +
                     ", isOut=" + isOut +
                     ", isFuncParam=" + isFuncParam +
                     '}';
-        else if(kind.equals("procedure"))
-            return "Record{" +
+            case "procedure" -> "Record{" +
                     "name='" + name + '\'' +
                     ", kind='" + kind + '\'' +
                     ", types=" + types +
                     '}';
-        else if(kind.equals("function"))
-            return "Record{" +
+            case "function" -> "Record{" +
                     "name='" + name + '\'' +
                     ", kind='" + kind + '\'' +
                     ", types=" + types +
                     ", returnTypes=" + returnTypes +
                     '}';
+            default -> null;
+        };
 
-        return null;
     }
 
 }

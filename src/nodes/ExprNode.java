@@ -11,6 +11,8 @@ public class ExprNode extends Node{
 
     public boolean isDollar;
 
+    public String nodeType;
+
     public ExprNode(String operator, Node node1) {
         this.operator = operator;
         this.node1 = node1;
@@ -33,6 +35,7 @@ public class ExprNode extends Node{
                 "operator='" + operator + '\'' +
                 ", node1=" + node1 +
                 ", node2=" + node2 +
+                ", isDollar=" + isDollar +
                 '}';
     }
 }

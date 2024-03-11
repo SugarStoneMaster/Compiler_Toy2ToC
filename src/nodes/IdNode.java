@@ -31,7 +31,6 @@ public class IdNode extends Node {
                 ", idType='" + idType + '\'' +
                 ", isOut=" + isOut +
                 ", isFuncParam=" + isFuncParam +
-                ", typeNode='" + typeNode + '\'' +
                 '}';
     }
 }
