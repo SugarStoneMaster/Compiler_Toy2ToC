@@ -57,3 +57,26 @@ func calculate(a: real, b: real, op: string) -> real, real:
 
     return result, result;
 endfunc
+
+%
+func calculatee(a: real, b: real, op: string, continue: string) -> real, real, real, real, real, real, real, real, real, real:
+    var result: real;\
+    var cicco: integer;\
+    var return25: real;\
+    var continuee: string;\
+    cicco ^= 3;
+
+
+    if op = "+" then
+        result ^= a + b;
+    elseif op = "-" then
+        result ^= a - b;
+    elseif op = "*" then
+        result ^= a * b;
+    elseif op = "/" then
+        result ^= a / b;
+    endif;
+
+    return result, result, result, result, result, result, result, result, result, result;
+endfunc
+%

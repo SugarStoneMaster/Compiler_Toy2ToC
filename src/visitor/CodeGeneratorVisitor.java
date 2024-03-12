@@ -19,7 +19,7 @@ public class CodeGeneratorVisitor implements Visitor{
 
 
 
-    //TODO change variable names named "return1,2,3,etc." and FREE MEMORY
+    //TODO FREE MEMORY
     public CodeGeneratorVisitor(Environment top)
     {
         this.top = top;
@@ -28,7 +28,7 @@ public class CodeGeneratorVisitor implements Visitor{
     }
 
 
-    @Override 
+    @Override
     public Object visit(ProgramNode node) {
         codeBuffer.append("#include <stdio.h>\n" +
                 "#include <string.h>\n" +
@@ -625,6 +625,7 @@ public class CodeGeneratorVisitor implements Visitor{
 
         return "";
     }
+
 
 
 

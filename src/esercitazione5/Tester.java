@@ -28,7 +28,6 @@ public class Tester {
 
 			ScopingVisitor scoping = new ScopingVisitor();
 			Environment top = (Environment) programNode.accept(scoping);
-			//System.out.println(top);
 
 			SemanticAnalysisVisitor semantic = new SemanticAnalysisVisitor(top);
 			programNode.accept(semantic);

@@ -79,7 +79,6 @@ public class Environment {
                     Record found = (Record) currentTable.get(langKeyword);
                     if(found != null)
                     {
-                        System.out.println(found.toString("variable"));
                         String newName;
                         int i = 1;
                         while(symbols.contains(newName = generateNewIdentifierForKeyword(langKeyword, i))) i++;

@@ -17,6 +17,8 @@ public class ScopingVisitor implements Visitor{
 
     public ArrayList<String> langKeywords; //in this case lang is C
 
+    public int maxReturns = 1;
+
     public ScopingVisitor() {
         top = new Environment(null); //entering global scope
         top.table.name = "Globals";
@@ -26,6 +28,13 @@ public class ScopingVisitor implements Visitor{
 
     @Override
     public Object visit(ProgramNode node) {
+        for(FunctionNode functionNode : node.functions)
+            if(functionNode.returnTypes.size() > maxReturns)
+                maxReturns = functionNode.returnTypes.size();
+        for(int i = 1; i <= maxReturns; i++)
+            langKeywords.add("return" + i);
+
+
         for(VarDeclNode varDeclNode : node.varDeclarations)
             varDeclNode.accept(this);
 
@@ -34,6 +43,9 @@ public class ScopingVisitor implements Visitor{
 
         for(FunctionNode functionNode : node.functions)
             functionNode.accept(this);
+
+
+
 
         return top;
     }
