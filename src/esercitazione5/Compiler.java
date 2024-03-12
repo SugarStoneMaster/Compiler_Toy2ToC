@@ -1,16 +1,12 @@
 package esercitazione5;
 
-import esercitazione5.Lexer;
-import esercitazione5.parser;
-import java_cup.runtime.Symbol;
 import nodes.ProgramNode;
 import org.w3c.dom.Document;
 import visitor.*;
 
 import java.io.*;
-import java.util.regex.Pattern;
 
-public class Tester {
+public class Compiler {
 
 
 
