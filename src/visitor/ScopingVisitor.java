@@ -3,8 +3,7 @@ package visitor;
 import nodes.*;
 import nodes.statements.*;
 
-import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.*;
 
 /**
  * Populates the type environment in order to achieve usages of variables before declarations
@@ -14,9 +13,15 @@ import java.util.Hashtable;
 public class ScopingVisitor implements Visitor{
     private Environment top;
 
+    public HashSet<String> allSymbols;
+
+    public ArrayList<String> langKeywords; //in this case lang is C
+
     public ScopingVisitor() {
         top = new Environment(null); //entering global scope
         top.table.name = "Globals";
+        allSymbols = new HashSet<>();
+        langKeywords = new ArrayList<>(Arrays.asList("len", "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "int", "long", "register", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while"));
     }
 
     @Override
@@ -77,6 +82,8 @@ public class ScopingVisitor implements Visitor{
             for(IdNode idNode : node.parameters)
                 top.addId(idNode.name, "variable", idNode.idType, idNode.isOut, idNode.isFuncParam);
 
+        allSymbols.addAll(top.getAllSymbolsFromTypeEnvironment());
+        top.removeLangKeywords(allSymbols, langKeywords);
         node.body.environment = top; //saving current environment
 
         top = top.exitScope();
@@ -99,6 +106,8 @@ public class ScopingVisitor implements Visitor{
             for(IdNode idNode : node.parameters)
                 top.addId(idNode.name, "variable", idNode.idType, idNode.isOut, idNode.isFuncParam);
 
+        allSymbols.addAll(top.getAllSymbolsFromTypeEnvironment());
+        top.removeLangKeywords(allSymbols, langKeywords);
         node.body.environment = top; //saving current environment
 
         top = top.exitScope();
@@ -171,6 +180,8 @@ public class ScopingVisitor implements Visitor{
         for(Node n : node.nodes)
             n.accept(this);
 
+        allSymbols.addAll(top.getAllSymbolsFromTypeEnvironment());
+        top.removeLangKeywords(allSymbols, langKeywords);
         return top; //needed for saving environments in bodies
     }
 

@@ -64,25 +64,28 @@ public class Tester {
 			e.printStackTrace();
 		}
 
-		if (os.contains("win")) {
+		if (os.contains("win"))
+		{
 
 			try {
 				Runtime rt = Runtime.getRuntime();
 				Process processGCC = rt.exec("gcc test_files" + File.separator + "c_out" + File.separator + fileName + ".c" + " -o ." + File.separator + "test_files" + File.separator+ "c_out" + File.separator + fileName + ".exe");
 				processGCC.waitFor();
-				Process processEXE = Runtime.getRuntime().exec("cmd /k start cmd.exe @cmd /k " + "." + File.separator + "test_files" + File.separator+ "c_out" + File.separator + fileName + ".exe");
+				Process processEXE = Runtime.getRuntime().exec("cmd /k start cmd.exe @cmd /k " + "test_files" + File.separator+ "c_out" + File.separator + fileName + ".exe");
 				processEXE.waitFor();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		} else if (os.contains("mac")) {
+		}
+		else if (os.contains("mac"))
+		{
 			try {
 				String gccCommand = "gcc test_files" + File.separator + "c_out" + File.separator + fileName + ".c" + " -o ." + File.separator + "test_files" + File.separator+ "c_out" + File.separator + fileName;
 				Process p = Runtime.getRuntime().exec(gccCommand);
 				p.waitFor();
 
 				String terminalCommand = "open -a Terminal ";
-				Runtime.getRuntime().exec(terminalCommand + "." + File.separator + "test_files" + File.separator + "c_out" + File.separator + fileName);
+				Runtime.getRuntime().exec(terminalCommand + "test_files" + File.separator + "c_out" + File.separator + fileName);
 
 			} catch (Exception e) {
 				e.printStackTrace();

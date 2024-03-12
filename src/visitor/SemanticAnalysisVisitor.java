@@ -286,12 +286,17 @@ public class SemanticAnalysisVisitor implements Visitor{
             }
             else if(procArgumentNode.variableReferenced != null)
             {
+                IdNode idNode = new IdNode(procArgumentNode.variableReferenced);
+                idNode.accept(this);
                 Record foundVar = top.getFromTypeEnvironment(procArgumentNode.variableReferenced);
-                String typeVar = "out " + foundVar.type;
-                if(!(typeVar.equals(found.types.get(i))))
+                if(foundVar != null)
                 {
-                    errors.add(new Error((i+1) + "° parameter should be " + found.types.get(i) + " but is " + typeVar + " in procedure call " +  node.procedureName));
-                    type = "error";
+                    String typeVar = "out " + foundVar.type;
+                    if(!(typeVar.equals(found.types.get(i))))
+                    {
+                        errors.add(new Error((i+1) + "° parameter should be " + found.types.get(i) + " but is " + typeVar + " in procedure call " +  node.procedureName));
+                        type = "error";
+                    }
                 }
             }
         }
@@ -350,6 +355,11 @@ public class SemanticAnalysisVisitor implements Visitor{
         for(ExprNode exprNode : node.expressions)
         {
             String typeAccept = (String) exprNode.accept(this);
+            if(!exprNode.isDollar && (!(typeAccept.equals("string")) || exprNode.operator.equals("id")))
+            {
+                errors.add(new Error("Expressions (also ids) are used only in $"));
+                type = "error";
+            }
             if(typeAccept.equals("error"))
                 type = "error";
         }

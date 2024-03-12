@@ -1,7 +1,5 @@
 package visitor;
 
-import nodes.Node;
-
 import java.util.*;
 
 public class Environment {
@@ -57,6 +55,42 @@ public class Environment {
         return table.get(name);
     }
 
+    public HashSet<String> getAllSymbolsFromTypeEnvironment()
+    {
+        HashSet<String> symbols = new HashSet<>();
+        for(Environment e = this; e != null; e = e.prev)
+        {
+            Collection<String> records = e.table.keySet();
+            symbols.addAll(records);
+        }
+
+        return symbols;
+    }
+
+    public void removeLangKeywords(HashSet<String> symbols, ArrayList<String> langKeywords) //in this case, because the translation is from Toy2 to C, "Lang" is C
+    {
+        for(Environment e = this; e != null; e = e.prev)
+        {
+            Table<String, Record> currentTable = e.table;
+            for(String langKeyword : langKeywords)
+            {
+                if(symbols.contains(langKeyword))
+                {
+                    Record found = (Record) currentTable.get(langKeyword);
+                    if(found != null)
+                    {
+                        System.out.println(found.toString("variable"));
+                        String newName;
+                        int i = 1;
+                        while(symbols.contains(newName = generateNewIdentifierForKeyword(langKeyword, i))) i++;
+                        found.name = newName;
+                    }
+
+                }
+            }
+        }
+    }
+
     public Environment createAndEnterScope() {
         return new Environment(this);
     }
@@ -84,4 +118,35 @@ public class Environment {
 
         return string.toString();
     }
+
+
+
+
+    private static String generateRandomIdentifier() {
+        final String LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        final String DIGITS = "0123456789";
+        final int MAX_LENGTH = 10;
+        Random random = new Random();
+        StringBuilder identifier = new StringBuilder();
+
+        // Add a random letter as the first character
+        identifier.append(LETTERS.charAt(random.nextInt(LETTERS.length())));
+
+        // Generate a random string of length 0 to MAX_LENGTH - 1
+        int randomLength = random.nextInt(MAX_LENGTH - 1) + 1;
+        for (int i = 0; i < randomLength; i++) {
+            // Append a random letter or digit
+            identifier.append(random.nextInt(2) == 0 ? LETTERS.charAt(random.nextInt(LETTERS.length())) : DIGITS.charAt(random.nextInt(DIGITS.length())));
+        }
+
+        return identifier.toString();
+    }
+
+    private String generateNewIdentifierForKeyword(String keyword, int i)
+    {
+        char lastChar = keyword.charAt(keyword.length() - i);
+        keyword += lastChar;
+        return keyword;
+    }
+
 }

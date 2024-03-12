@@ -8,16 +8,16 @@
 
 
 proc main():
-    var a, b, result : real; op : string; continuee ^= true;\
-    loop(@a, @b, @result, @op, @continuee);
+    var a, b, result : real; op : string; continue ^= true;\
+    loop(@a, @b, @result, @op, @continue);
 
 endproc
 
 
 
-proc loop(out a: real, out b: real, out result: real, out op: string, out continuee: boolean):
+proc loop(out a: real, out b: real, out result: real, out op: string, out continue: boolean):
     var z ^= 2;\
-    while continuee = true do
+    while continue = true do
         <-- "Che operazione aritmetica vuoi svolgere? (+, -, *, /)    " $(op);
         while op <> "+" && op <> "-" && op <> "*" && op <> "/" do
             <-- "Devi inserire un'operazione aritmetica consentita (+, -, *, /)    " $(op);
@@ -30,7 +30,7 @@ proc loop(out a: real, out b: real, out result: real, out op: string, out contin
         while z < 0 || z > 1 do
             <-- "Vuoi continuare? (0: no, 1: sì)    " $(z);
             if z = 0 then
-                continuee ^= false;
+                continue ^= false;
             endif;
         endwhile;
         z ^= 2;

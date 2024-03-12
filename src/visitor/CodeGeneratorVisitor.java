@@ -17,7 +17,9 @@ public class CodeGeneratorVisitor implements Visitor{
 
     private String currentIndent;
 
-    //TODO handle keywords in C and free memory
+
+
+    //TODO change variable names named "return1,2,3,etc." and FREE MEMORY
     public CodeGeneratorVisitor(Environment top)
     {
         this.top = top;
@@ -26,14 +28,14 @@ public class CodeGeneratorVisitor implements Visitor{
     }
 
 
-    @Override
+    @Override 
     public Object visit(ProgramNode node) {
         codeBuffer.append("#include <stdio.h>\n" +
                 "#include <string.h>\n" +
                 "#include <stdlib.h>\n" +
                 "#include <stdbool.h>\n\n");
 
-        codeBuffer.append("size_t len = 0;\n\n"); // TODO handle scoping for len. //for getline in string reading
+        codeBuffer.append("size_t len = 0;\n\n"); //for getline in string reading
 
         for(VarDeclNode varDeclNode : node.varDeclarations)
             varDeclNode.accept(this);
@@ -124,8 +126,13 @@ public class CodeGeneratorVisitor implements Visitor{
             {
                 Record found = top.getFromThisTable(node.identifiers.get(i).name);
                 codeBuffer.append(currentIndent + getTypeInC(found.type) + " ");
-                codeBuffer.append(node.identifiers.get(i).name + " = ");
+                node.identifiers.get(i).accept(this);
+                codeBuffer.append(" = ");
+                if(node.initialValues.get(i).value.getClass().getSimpleName().equals("String"))
+                    codeBuffer.append("strdup(");
                 node.initialValues.get(i).accept(this); //append const
+                if(node.initialValues.get(i).value.getClass().getSimpleName().equals("String"))
+                    codeBuffer.append(")");
                 codeBuffer.append(";\n");
             }
         }
@@ -138,7 +145,7 @@ public class CodeGeneratorVisitor implements Visitor{
         codeBuffer.append("void " + node.name + "(");
         if(node.parameters != null)
             for(IdNode idNode : node.parameters)
-                codeBuffer.append(getTypeInC(idNode.idType) + " " + idNode.name + ", ");
+                codeBuffer.append(getTypeInC(idNode.idType) + " " + node.body.environment.getFromTypeEnvironment(idNode.name).name + ", ");
         for(int i = 0; i < node.returnTypes.size(); i++)
             codeBuffer.append(getTypeInC(node.returnTypes.get(i)) + "* " + "return" + (i+1) + ", "); //TODO modify lexer or rename variable during scoping
         codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
@@ -160,7 +167,7 @@ public class CodeGeneratorVisitor implements Visitor{
         if(node.parameters != null)
         {
             for(IdNode idNode : node.parameters)
-                codeBuffer.append(getTypeInC(idNode.idType) + (idNode.isOut ? "* " : " ") + idNode.name + ", ");
+                codeBuffer.append(getTypeInC(idNode.idType) + (idNode.isOut ? "* " : " ") + node.body.environment.getFromTypeEnvironment(idNode.name).name + ", ");
 
             codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
         }
@@ -191,7 +198,11 @@ public class CodeGeneratorVisitor implements Visitor{
                 codeBuffer.append(currentIndent + (foundVar.isOut ? "*" : ""));
                 node.ids.get(currentId).accept(this);
                 codeBuffer.append(" = ");
+                if(node.expressions.get(i).operator.equals("string"))
+                    codeBuffer.append("strdup(");
                 node.expressions.get(i).accept(this);
+                if(node.expressions.get(i).operator.equals("string"))
+                    codeBuffer.append(")");
                 codeBuffer.append(";\n");
                 currentId++;
             }
@@ -346,18 +357,22 @@ public class CodeGeneratorVisitor implements Visitor{
         return "";
     }
 
-    @Override
+    @Override //TODO FREE MEMORY?
     public Object visit(WriteStatementNode node) {
         codeBuffer.append(currentIndent + "printf(\"");
         for(ExprNode exprNode : node.expressions)
         {
             if(!exprNode.isDollar)
             {
-                String value = (String) exprNode.accept(this);
-                //remove extra "" at start and end
-                codeBuffer.replace(codeBuffer.length() - 1, codeBuffer.length(), "");
-                codeBuffer.replace(codeBuffer.length() - value.length() -1, codeBuffer.length() - value.length(), "");
-
+                if(exprNode.operator.equals("add")) //string concatenation
+                    codeBuffer.append("%s");
+                else
+                {
+                    String value = (String) exprNode.accept(this);
+                    //remove extra "" at start and end
+                    codeBuffer.replace(codeBuffer.length() - 1, codeBuffer.length(), "");
+                    codeBuffer.replace(codeBuffer.length() - value.length() -1, codeBuffer.length() - value.length(), "");
+                }
             }
             else
                 codeBuffer.append(getTypeInCIO(exprNode.nodeType));
@@ -369,15 +384,26 @@ public class CodeGeneratorVisitor implements Visitor{
             if(exprNode.isDollar)
             {
                 codeBuffer.append(", ");
-                String name = (String) exprNode.accept(this);
-                Record found = top.getFromTypeEnvironment(name);
-                if(found != null)
-                    if(found.isOut)
-                    {
-                        codeBuffer.replace(codeBuffer.length() - name.length(), codeBuffer.length(), ""); //to put * before
-                        codeBuffer.append("*" + name);
-                    }
+                String value = (String) exprNode.accept(this);
+                if(exprNode.node1 instanceof IdNode idNode)
+                {
+                    String key = idNode.name;
+                    Record found = top.getFromTypeEnvironment(key);
+                    if(found != null)
+                        if(found.isOut)
+                        {
+                            codeBuffer.replace(codeBuffer.length() - value.length(), codeBuffer.length(), ""); //to put * before
+                            codeBuffer.append("*" + value);
+                        }
+                }
+
             }
+            else if(!exprNode.isDollar && exprNode.operator.equals("add"))
+            {
+                codeBuffer.append(", ");
+                exprNode.accept(this);
+            }
+
         }
 
         codeBuffer.append(");\n");
@@ -468,20 +494,39 @@ public class CodeGeneratorVisitor implements Visitor{
                 isOut2 = true;
         }
 
-        if(exprNode1.nodeType.equals("string") && exprNode2.nodeType.equals("string") && (node.operator.equals("eq") || node.operator.equals("ne")))
+        if(exprNode1.nodeType.equals("string") && exprNode2.nodeType.equals("string") && (node.operator.equals("eq") || node.operator.equals("ne") || node.operator.equals("add")))
         {
-            codeBuffer.append("strcmp(");
+            if(node.operator.equals("add"))
+            {
+                codeBuffer.append("strcat(");
 
-            if(isOut1) codeBuffer.append("*");
-            exprNode1.accept(this);
-            codeBuffer.append(", ");
-            if(isOut2) codeBuffer.append("*");
-            exprNode2.accept(this);
+                if(isOut1) codeBuffer.append("*");
+                else
+                    codeBuffer.append("strdup(");
+                exprNode1.accept(this);
+                if(!isOut1)
+                    codeBuffer.append(")");
+                codeBuffer.append(", ");
+                if(isOut2) codeBuffer.append("*");
+                exprNode2.accept(this);
 
-            codeBuffer.append(")");
+                codeBuffer.append(")");
+            }
+            else
+            {
+                codeBuffer.append("strcmp(");
 
-            if(node.operator.equals("eq")) codeBuffer.append(" == 0");
-            else if(node.operator.equals("ne")) codeBuffer.append(" != 0");
+                if(isOut1) codeBuffer.append("*");
+                exprNode1.accept(this);
+                codeBuffer.append(", ");
+                if(isOut2) codeBuffer.append("*");
+                exprNode2.accept(this);
+
+                codeBuffer.append(")");
+
+                if(node.operator.equals("eq")) codeBuffer.append(" == 0");
+                else if(node.operator.equals("ne")) codeBuffer.append(" != 0");
+            }
 
             return "";
         }
@@ -562,15 +607,16 @@ public class CodeGeneratorVisitor implements Visitor{
 
     @Override
     public Object visit(IdNode node) {
-        codeBuffer.append(node.name);
+        Record found = top.getFromTypeEnvironment(node.name);
+        codeBuffer.append(found.name);
 
-        return node.name;
+        return found.name;
     }
 
     @Override
     public Object visit(ProcArgumentNode node) {
         if(node.variableReferenced != null)
-            codeBuffer.append("&" + node.variableReferenced + ", ");
+            codeBuffer.append("&" + top.getFromTypeEnvironment(node.variableReferenced).name + ", ");
         else if(node.exprNode != null)
         {
             node.exprNode.accept(this);
@@ -631,7 +677,7 @@ public class CodeGeneratorVisitor implements Visitor{
 
         FileOutputStream fileOutputStream = null;
         try {
-            fileOutputStream = new FileOutputStream("." + File.separator + "test_files" + File.separator + "c_out" + File.separator + fileName + ".c");
+            fileOutputStream = new FileOutputStream("test_files" + File.separator + "c_out" + File.separator + fileName + ".c");
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
