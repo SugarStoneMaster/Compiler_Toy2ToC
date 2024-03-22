@@ -26,5 +26,7 @@ public interface Visitor {
     Object visit(IdNode node);
     Object visit(ProcArgumentNode node);
 
+    Object visit(ForStatementNode node);
+
 
 }

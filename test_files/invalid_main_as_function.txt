@@ -7,11 +7,11 @@
 %
 
 
-proc main():
-    var a, b, result : real; op : string; continue ^= true;\ %la variabile continue verrà rinominata perché è una keyword del C%
+func main() -> real:
+    var a, b, result : real; op : string; continue ^= true;\
     loop(@a, @b, @result, @op, @continue);
 
-endproc
+endfunc
 
 
 

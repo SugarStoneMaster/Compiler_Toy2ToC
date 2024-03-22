@@ -6,6 +6,7 @@ import visitor.Visitor;
 
 public class WhileStatementNode extends StatementNode{
     public ExprNode condition;
+
     public BodyNode body;
 
     public WhileStatementNode(ExprNode condition, BodyNode body) {

@@ -6,7 +6,9 @@ import nodes.ExprNode;
 import visitor.Environment;
 import visitor.Visitor;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class IfStatementNode extends StatementNode {
     public ExprNode condition;
@@ -17,7 +19,7 @@ public class IfStatementNode extends StatementNode {
     public IfStatementNode(ExprNode condition, BodyNode thenBody, List<ElifNode> elifs, BodyNode elseBody) {
         this.condition = condition;
         this.thenBody = thenBody;
-        this.elifs = elifs;
+        this.elifs = Objects.requireNonNullElseGet(elifs, ArrayList::new);
         this.elseBody = elseBody;
     }
 

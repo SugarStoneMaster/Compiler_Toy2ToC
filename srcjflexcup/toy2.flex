@@ -74,6 +74,7 @@ import java_cup.runtime.Symbol;
 
 %{
     StringBuffer string = new StringBuffer();
+    int maxCharLength = 1;
     int startComment;
     int startString;
     private Symbol symbol(int type)
@@ -112,13 +113,15 @@ InputChar = [^\r\n]
 
 Comment = "%" [^*] ~"%"
 
-Identifier = {letter} ({letter} | {digit})*
+Identifier = {letter} ({letter} | {digit} | {underscore})*
 RealNumber = {digit}+(\.{digit}+)
 IntegerNumber = {digit}+
 letter = [A-Za-z]
 digit = [0-9]
+underscore = [_]
 
 %state STRING
+%state CHAR
 %state COMMENT
 %%
 
@@ -147,11 +150,18 @@ digit = [0-9]
 "real"                {return symbol(sym.REAL);}
 "string"              {return symbol(sym.STRING);}
 "boolean"             {return symbol(sym.BOOLEAN);}
+"char"                {return symbol(sym.CHAR);}
+"for"                 {return symbol(sym.FOR);}
+"to"                  {return symbol(sym.TO);}
+"step"                {return symbol(sym.STEP);}
+"endfor"              {return symbol(sym.ENDFOR);}
+
 
 {Identifier}          {return symbol(sym.ID, yytext());}
 
 {IntegerNumber}       {return symbol(sym.INTEGER_CONST, yytext());}
 {RealNumber}          {return symbol(sym.REAL_CONST, yytext());}
+\'                    {string.setLength(0); startString = yyline+1; yybegin(CHAR);}
 \"                    {string.setLength(0); startString = yyline+1; yybegin(STRING);}
 "%"                   {startComment = yyline+1; yybegin(COMMENT);}
 
@@ -208,6 +218,16 @@ digit = [0-9]
 \\r                   {string.append("\r");}
 \\\"                  {string.append("\"");}
 \\                    {string.append("\\");}
+
+}
+
+<CHAR>
+{
+
+\'                    {yybegin(YYINITIAL); return symbol(sym.CHAR_CONST, string.toString());}
+
+[^\n\r\']+            {string.append(yytext()); if(string.length() > 1) throw new Error("Too much chars");}
+
 
 }
 

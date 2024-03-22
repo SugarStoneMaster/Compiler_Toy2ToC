@@ -11,6 +11,15 @@ public class OpTypeTable {
 
         opTypeMap.put(new OpKey("add", "string", "string"), "string");
 
+        opTypeMap.put(new OpKey("add", "real", "string"), "string");
+        opTypeMap.put(new OpKey("add", "string", "real"), "string");
+        opTypeMap.put(new OpKey("add", "integer", "string"), "string");
+        opTypeMap.put(new OpKey("add", "string", "integer"), "string");
+        opTypeMap.put(new OpKey("add", "boolean", "string"), "string");
+        opTypeMap.put(new OpKey("add", "string", "boolean"), "string");
+
+
+
         opTypeMap.put(new OpKey("add", "integer", "integer"), "integer");
         opTypeMap.put(new OpKey("sub", "integer", "integer"), "integer");
         opTypeMap.put(new OpKey("times", "integer", "integer"), "integer");
@@ -47,6 +56,13 @@ public class OpTypeTable {
         opTypeMap.put(new OpKey("le", "integer", "integer"), "boolean");
         opTypeMap.put(new OpKey("gt", "integer", "integer"), "boolean");
         opTypeMap.put(new OpKey("ge", "integer", "integer"), "boolean");
+
+        opTypeMap.put(new OpKey("eq", "char", "char"), "boolean");
+        opTypeMap.put(new OpKey("ne", "char", "char"), "boolean");
+        opTypeMap.put(new OpKey("lt", "char", "char"), "boolean");
+        opTypeMap.put(new OpKey("le", "char", "char"), "boolean");
+        opTypeMap.put(new OpKey("gt", "char", "char"), "boolean");
+        opTypeMap.put(new OpKey("ge", "char", "char"), "boolean");
 
         opTypeMap.put(new OpKey("eq", "real", "integer"), "boolean");
         opTypeMap.put(new OpKey("ne", "real", "integer"), "boolean");

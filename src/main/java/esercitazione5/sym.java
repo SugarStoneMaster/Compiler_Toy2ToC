@@ -8,13 +8,16 @@ package esercitazione5;
 /** CUP generated interface containing symbol constants. */
 public interface sym {
   /* terminals */
+  public static final int CHAR_CONST = 58;
   public static final int FUNCTION = 10;
+  public static final int CHAR = 53;
   public static final int GE = 40;
   public static final int ENDVAR = 7;
-  public static final int INTEGER_CONST = 51;
+  public static final int INTEGER_CONST = 56;
   public static final int INTEGER = 45;
   public static final int SEMI = 3;
   public static final int OUT = 17;
+  public static final int FOR = 49;
   public static final int MINUS = 32;
   public static final int REF = 30;
   public static final int WRITE = 26;
@@ -29,10 +32,11 @@ public interface sym {
   public static final int COMMA = 6;
   public static final int WRITERETURN = 27;
   public static final int DIV = 34;
+  public static final int ENDFOR = 52;
   public static final int PLUS = 31;
   public static final int ASSIGN = 5;
   public static final int IF = 18;
-  public static final int ID = 49;
+  public static final int ID = 54;
   public static final int ENDWHILE = 25;
   public static final int LE = 38;
   public static final int BOOLEAN = 47;
@@ -48,19 +52,21 @@ public interface sym {
   public static final int ENDIF = 21;
   public static final int ELSE = 20;
   public static final int READ = 29;
+  public static final int TO = 50;
   public static final int WHILE = 23;
-  public static final int REAL_CONST = 52;
+  public static final int REAL_CONST = 57;
   public static final int THEN = 19;
   public static final int NE = 36;
   public static final int STRING = 46;
   public static final int LPAR = 12;
   public static final int FALSE = 9;
-  public static final int STRING_CONST = 50;
+  public static final int STRING_CONST = 55;
   public static final int GT = 39;
   public static final int VAR = 2;
   public static final int ELIF = 22;
   public static final int PROCEDURE = 15;
   public static final int DO = 24;
+  public static final int STEP = 51;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
@@ -111,10 +117,16 @@ public interface sym {
   "STRING",
   "BOOLEAN",
   "RETURN",
+  "FOR",
+  "TO",
+  "STEP",
+  "ENDFOR",
+  "CHAR",
   "ID",
   "STRING_CONST",
   "INTEGER_CONST",
-  "REAL_CONST"
+  "REAL_CONST",
+  "CHAR_CONST"
   };
 }
 

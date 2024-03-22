@@ -7,6 +7,7 @@ import visitor.Visitor;
 import java.util.List;
 
 public class BodyNode extends Node {
+
     public List<Node> nodes;
 
     public Environment environment;

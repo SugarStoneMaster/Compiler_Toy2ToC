@@ -35,7 +35,7 @@
 
     <build>
         <sourceDirectory>
-            src
+            src/main/java
         </sourceDirectory>
 
         <plugins>
@@ -49,7 +49,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>src</outputDirectory>
+                            <outputDirectory>src/main/java</outputDirectory>
                             <lexDefinitions>
                                 <lexDefinition>srcjflexcup</lexDefinition>
                             </lexDefinitions>
@@ -70,7 +70,7 @@
                 </executions>
                 <configuration>
                     <cupDefinition>srcjflexcup/toy2.cup</cupDefinition>
-                    <outputDirectory>src</outputDirectory>
+                    <outputDirectory>src/main/java</outputDirectory>
                     <packageName>esercitazione5</packageName>
                     <dumpGrammar>${miaCondizione}</dumpGrammar>
                     <dumpStates>${miaCondizione}</dumpStates>
@@ -84,7 +84,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>esercitazione5.Compilatore</mainClass>
+                    <mainClass>esercitazione5.Compiler</mainClass>
                 </configuration>
             </plugin>
 

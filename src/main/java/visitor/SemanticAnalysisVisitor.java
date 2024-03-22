@@ -109,7 +109,7 @@ public class SemanticAnalysisVisitor implements Visitor{
         }
         else if (returnStat.returnExpressions.size() != node.returnTypes.size())
         {
-            errors.add(new Error("Mismatch between number of return expressions and return types"));
+            errors.add(new Error("Mismatch between number of return expressions and return types in function " +  node.name));
             type = "error";
         }
         else
@@ -191,7 +191,7 @@ public class SemanticAnalysisVisitor implements Visitor{
         //TODO make error message more clear
         if(node.ids.size() != expressionsSize)
         {
-            errors.add(new Error("Mismatch between identifiers and expressions assigned" + node.ids + "   " + node.expressions));
+            errors.add(new Error("Mismatch between identifiers and expressions assigned"));
             type = "error";
         }
         //TODO simplify this
@@ -209,12 +209,15 @@ public class SemanticAnalysisVisitor implements Visitor{
                 for (int typeIndex = 0; typeIndex < exprTypes.size() && i < node.ids.size(); typeIndex++, i++) {
                     String exprType = exprTypes.get(typeIndex);
                     found = top.getFromTypeEnvironment(node.ids.get(i).name);
-                    boolean isCompatibleType = found.type.equals(exprType) || (found.type.equals("real") && exprType.equals("integer"));
-                    if (!isCompatibleType)
+                    if(found != null)
                     {
-                        if(!(exprType.equals("error")))
-                            errors.add(new Error("Variable " + found.name + " (" + found.type + ") cannot be casted to " + exprType));
-                        type = "error";
+                        boolean isCompatibleType = found.type.equals(exprType) || (found.type.equals("real") && exprType.equals("integer")) || (found.type.equals("char") && exprType.equals("integer"));
+                        if (!isCompatibleType)
+                        {
+                            if(!(exprType.equals("error")))
+                                errors.add(new Error("Variable " + found.name + " (" + found.type + ") cannot be casted to " + exprType));
+                            type = "error";
+                        }
                     }
                 }
 
@@ -231,20 +234,19 @@ public class SemanticAnalysisVisitor implements Visitor{
         String conditionType = (String) node.condition.accept(this);
         if(conditionType == null || !(conditionType.equals("boolean")))
         {
-            errors.add(new Error("if condition " + node.condition + " must be a boolean condition"));
+            errors.add(new Error("if condition " + "must be a boolean condition"));
             type = "error";
         }
 
         type = (String) node.thenBody.accept(this); //enter scope previously created
         top = top.exitScope();
 
-        if(node.elifs != null)
-            for(ElifNode elifNode : node.elifs)
-            {
-                String typeAccept = (String) elifNode.accept(this);
-                if(typeAccept.equals("error"))
-                    type = "error";
-            }
+        for(ElifNode elifNode : node.elifs)
+        {
+            String typeAccept = (String) elifNode.accept(this);
+            if(typeAccept.equals("error"))
+                type = "error";
+        }
 
         if(node.elseBody != null)
         {
@@ -278,7 +280,8 @@ public class SemanticAnalysisVisitor implements Visitor{
             if(procArgumentNode.exprNode != null)
             {
                 String typeAccept = (String) procArgumentNode.exprNode.accept(this);
-                if(!(typeAccept.equals(found.types.get(i))))
+                boolean isCompatibleType = found.types.get(i).equals(typeAccept) || (found.types.get(i).equals("real") && typeAccept.equals("integer"));
+                if(!isCompatibleType)
                 {
                     errors.add((new Error((i+1) + "° parameter should be " + found.types.get(i) + " but is " + typeAccept + " in procedure call " + node.procedureName)));
                     type = "error";
@@ -350,6 +353,43 @@ public class SemanticAnalysisVisitor implements Visitor{
     }
 
     @Override
+    public Object visit(ForStatementNode node) {
+        String type = "notype";
+
+        type = (String) node.init.accept(this);
+
+        String typeConditionInit = (String) node.init.expressions.get(0).accept(this);
+        String typeConditionToInt = (String) node.toInt.accept(this);
+        String typeConditionStep = (String) node.step.accept(this);
+        if(typeConditionInit == null || !(typeConditionInit.equals("integer")))
+        {
+            errors.add(new Error("For variable " + node.variableName + " must be initialized to an integer expression"));
+            type = "error";
+        }
+
+        if(typeConditionToInt == null || !(typeConditionToInt.equals("integer")))
+        {
+            errors.add(new Error("For \"to\" must be an integer expression"));
+            type = "error";
+        }
+
+        if(typeConditionStep == null || !(typeConditionStep.equals("integer")))
+        {
+            errors.add(new Error("For \"step\" must be an integer expression"));
+            type = "error";
+        }
+
+        if(type.equals("error"))
+            node.body.accept(this);
+        else
+            type = (String) node.body.accept(this);
+
+        top = top.exitScope();
+
+        return type;
+    }
+
+    @Override
     public Object visit(WriteStatementNode node) {
         String type = "notype";
         for(ExprNode exprNode : node.expressions)
@@ -386,6 +426,8 @@ public class SemanticAnalysisVisitor implements Visitor{
         String type = node.value.getClass().getSimpleName().toLowerCase();
         if(type.equals("float"))
             type = "real";
+        if(type.equals("character"))
+            type = "char";
 
         return type;
     }
@@ -527,10 +569,11 @@ public class SemanticAnalysisVisitor implements Visitor{
 
         for(int i = 0; i < node.arguments.size(); i++)
         {
-            String argumentType = (String) node.arguments.get(i).accept(this);
-            if(!(argumentType.equals(found.types.get(i))))
+            String typeAccept = (String) node.arguments.get(i).accept(this);
+            boolean isCompatibleType = found.types.get(i).equals(typeAccept) || (found.types.get(i).equals("real") && typeAccept.equals("integer"));
+            if(!isCompatibleType)
             {
-                errors.add(new Error((i+1) + "° parameter should be " + found.types.get(i) + " but is " + argumentType + " in function call " + node.functionName));
+                errors.add(new Error((i+1) + "° parameter should be " + found.types.get(i) + " but is " + typeAccept + " in function call " + node.functionName));
                 foundError = true;
             }
 
@@ -568,4 +611,6 @@ public class SemanticAnalysisVisitor implements Visitor{
 
         return type;
     }
+
+
 }

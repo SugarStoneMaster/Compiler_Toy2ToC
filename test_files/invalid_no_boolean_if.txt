@@ -8,7 +8,7 @@
 
 
 proc main():
-    var a, b, result : real; op : string; continue ^= true;\ %la variabile continue verrà rinominata perché è una keyword del C%
+    var a, b, result : real; op : string; continue ^= true;\
     loop(@a, @b, @result, @op, @continue);
 
 endproc
@@ -42,7 +42,7 @@ endproc
 func calculate(a: real, b: real, op: string) -> real:
     var result: real;\
 
-    if op = "+" then
+    if op + "+" then
         result ^= a + b;
     elseif op = "-" then
         result ^= a - b;

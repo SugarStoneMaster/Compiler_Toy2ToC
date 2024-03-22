@@ -19,7 +19,6 @@ public class CodeGeneratorVisitor implements Visitor{
 
 
 
-    //TODO FREE MEMORY
     public CodeGeneratorVisitor(Environment top)
     {
         this.top = top;
@@ -33,12 +32,23 @@ public class CodeGeneratorVisitor implements Visitor{
         codeBuffer.append("#include <stdio.h>\n" +
                 "#include <string.h>\n" +
                 "#include <stdlib.h>\n" +
-                "#include <stdbool.h>\n\n");
+                "#include <stdbool.h>\n\n" +
+                "char* convert_and_printF(float);\n" +
+                "char* convert_and_printI(int); \n" +
+                "char* convert_and_printB(bool); \n\n");
+        codeBuffer.append("void readInput(char**);\n\n");
+        codeBuffer.append("void freeAll();\n\n");
 
-        codeBuffer.append("size_t len = 0;\n\n"); //for getline in string reading
+
+
+
+        codeBuffer.append("char *charPointers[1000];\n" +
+                "int indexPointer = 0;\n\n"); //to keep track of pointers for freeing
+        codeBuffer.append("size_t len = 0;\n\n\n"); //for getline in string reading
 
         for(VarDeclNode varDeclNode : node.varDeclarations)
             varDeclNode.accept(this);
+        codeBuffer.append("\n");
 
         //functions and procedure signs
         for(Map.Entry<String, Record> entry : top.table.entrySet())
@@ -46,8 +56,10 @@ public class CodeGeneratorVisitor implements Visitor{
             Record record = entry.getValue();
             if(record.kind.equals("function") || (record.kind.equals("procedure") && !(record.name.equals("main"))))
             {
-                //return type
-                codeBuffer.append("void ");
+                if(record.kind.equals("procedure") || (record.kind.equals("function") && record.returnTypes.size() > 1))
+                    codeBuffer.append("void ");
+                else
+                    codeBuffer.append(getTypeInC(record.returnTypes.get(0)) + " ");
 
                 codeBuffer.append(record.name + "(");
                 for(String type : record.types)
@@ -56,13 +68,13 @@ public class CodeGeneratorVisitor implements Visitor{
                     codeBuffer.append(", ");
                 }
                 if(record.returnTypes != null)
-                    for(String type : record.returnTypes)
+                    for(int i = 0; i < record.returnTypes.size() && record.returnTypes.size() > 1; i++)
                     {
-                        codeBuffer.append(getTypeInC(type));
+                        codeBuffer.append(getTypeInC(record.returnTypes.get(i)));
                         codeBuffer.append("*, ");
                     }
 
-                if(!record.types.isEmpty() || !record.returnTypes.isEmpty())
+                if(!record.types.isEmpty() || record.returnTypes.size() > 1)
                     codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
                 codeBuffer.append(");\n");
             }
@@ -83,6 +95,47 @@ public class CodeGeneratorVisitor implements Visitor{
         for(FunctionNode functionNode : node.functions)
             functionNode.accept(this);
 
+        codeBuffer.append("//utility functions\n");
+        codeBuffer.append("char* convert_and_printF(float f)\n" +
+                "{\n" +
+                "    char* str = (char*) malloc(32 * sizeof(char)); \n" +
+                "    sprintf(str, \"%.5f\", f); \n" +
+                "    charPointers[indexPointer] = str;\n" +
+                "    indexPointer++;\n" +
+                "    return str;\n" +
+                "}\n" +
+                "\n" +
+                "char* convert_and_printI(int i) \n" +
+                "{\n" +
+                "     char* str = (char*) malloc(32 * sizeof(char)); \n" +
+                "     sprintf(str, \"%d\", i); \n" +
+                "     charPointers[indexPointer] = str;\n" +
+                "     indexPointer++;\n" +
+                "     return str;\n" +
+                "}\n" +
+                "\n" +
+                "char* convert_and_printB(bool b) \n" +
+                "{\n" +
+                "     char* str = (char*) malloc(8 * sizeof(char)); \n" +
+                "     sprintf(str, \"%s\", b ? \"true\" : \"false\"); \n" +
+                "     charPointers[indexPointer] = str;\n" +
+                "     indexPointer++;\n" +
+                "     return str;\n" +
+                "}\n\n");
+        codeBuffer.append("void readInput(char **str)\n" +
+                "{\n" +
+                "    *str = malloc(1001);\n" +
+                "    fgets(*str, 1000, stdin);\n" +
+                "    (*str)[strcspn(*str, \"\\n\")] = '\\0';\n" +
+                "    *str = realloc(*str, strlen(*str) + 3);\n" +
+                "    charPointers[indexPointer] = *str;\n" +
+                "    indexPointer++;\n" +
+                "}");
+        codeBuffer.append("void freeAll()\n" +
+                "{\n" +
+                "     for(int i = 0; i < indexPointer; i++)\n" +
+                "         free(charPointers[i]);\n" +
+                "}\n\n");
 
         return "";
     }
@@ -105,10 +158,13 @@ public class CodeGeneratorVisitor implements Visitor{
                 if(node.type.equals("string"))
                 {
                     if(i >= 1)
-                        codeBuffer.append("*");
+                        codeBuffer.append(currentIndent + getTypeInC(node.type) + " ");
                     node.identifiers.get(i).accept(this);
-                    codeBuffer.append(" = NULL");
-                    codeBuffer.append(", ");
+                    codeBuffer.append(" = NULL;\n");
+                    codeBuffer.append(currentIndent + "charPointers[indexPointer] = ");
+                    node.identifiers.get(i).accept(this);
+                    codeBuffer.append(";\n");
+                    codeBuffer.append(currentIndent + "indexPointer++;\n");
                 }
                 else
                 {
@@ -132,7 +188,13 @@ public class CodeGeneratorVisitor implements Visitor{
                     codeBuffer.append("strdup(");
                 node.initialValues.get(i).accept(this); //append const
                 if(node.initialValues.get(i).value.getClass().getSimpleName().equals("String"))
-                    codeBuffer.append(")");
+                {
+                    codeBuffer.append(");\n");
+                    codeBuffer.append(currentIndent + "charPointers[indexPointer] = ");
+                    node.identifiers.get(i).accept(this);
+                    codeBuffer.append(";\n");
+                    codeBuffer.append(currentIndent + "indexPointer++");
+                }
                 codeBuffer.append(";\n");
             }
         }
@@ -142,13 +204,17 @@ public class CodeGeneratorVisitor implements Visitor{
 
     @Override
     public Object visit(FunctionNode node) {
-        codeBuffer.append("void " + node.name + "(");
-        if(node.parameters != null)
-            for(IdNode idNode : node.parameters)
-                codeBuffer.append(getTypeInC(idNode.idType) + " " + node.body.environment.getFromTypeEnvironment(idNode.name).name + ", ");
-        for(int i = 0; i < node.returnTypes.size(); i++)
-            codeBuffer.append(getTypeInC(node.returnTypes.get(i)) + "* " + "return" + (i+1) + ", "); //TODO modify lexer or rename variable during scoping
-        codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
+        if(node.returnTypes.size() > 1)
+            codeBuffer.append("void ");
+        else
+            codeBuffer.append(getTypeInC(node.returnTypes.get(0)) + " ");
+        codeBuffer.append(node.name + "(");
+        for(IdNode idNode : node.parameters)
+            codeBuffer.append(getTypeInC(idNode.idType) + " " + node.body.environment.getFromTypeEnvironment(idNode.name).name + ", ");
+        for(int i = 0; i < node.returnTypes.size() && node.returnTypes.size() > 1; i++)
+            codeBuffer.append(getTypeInC(node.returnTypes.get(i)) + "* " + "return" + (i+1) + ", ");
+        if(!node.parameters.isEmpty() || node.returnTypes.size() > 1)
+            codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
         codeBuffer.append(")\n");
 
         node.body.accept(this); //append body
@@ -164,13 +230,13 @@ public class CodeGeneratorVisitor implements Visitor{
             codeBuffer.append("int " + node.name + "(");
         else
             codeBuffer.append("void " + node.name + "(");
-        if(node.parameters != null)
-        {
-            for(IdNode idNode : node.parameters)
-                codeBuffer.append(getTypeInC(idNode.idType) + (idNode.isOut ? "* " : " ") + node.body.environment.getFromTypeEnvironment(idNode.name).name + ", ");
 
+        for(IdNode idNode : node.parameters)
+            codeBuffer.append(getTypeInC(idNode.idType) + (idNode.isOut ? "* " : " ") + node.body.environment.getFromTypeEnvironment(idNode.name).name + ", ");
+
+        if(!node.parameters.isEmpty())
             codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
-        }
+
         codeBuffer.append(")\n");
 
         node.body.accept(this); //append body
@@ -178,6 +244,7 @@ public class CodeGeneratorVisitor implements Visitor{
         if(node.name.equals("main"))
         {
             codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
+            codeBuffer.append("    " + "freeAll();\n");
             codeBuffer.append("    " + "return 0;\n");
             codeBuffer.append("}");
         }
@@ -189,12 +256,14 @@ public class CodeGeneratorVisitor implements Visitor{
 
     @Override
     public Object visit(AssignStatementNode node) {
+        Record foundVar = null;
         int currentId = 0;
         for(int i = 0; i < node.expressions.size(); i++)
         {
+
             if(!(node.expressions.get(i).operator.equals("funcall")))
             {
-                Record foundVar = top.getFromTypeEnvironment(node.ids.get(currentId).name);
+                foundVar = top.getFromTypeEnvironment(node.ids.get(currentId).name);
                 codeBuffer.append(currentIndent + (foundVar.isOut ? "*" : ""));
                 node.ids.get(currentId).accept(this);
                 codeBuffer.append(" = ");
@@ -204,46 +273,70 @@ public class CodeGeneratorVisitor implements Visitor{
                 if(node.expressions.get(i).operator.equals("string"))
                     codeBuffer.append(")");
                 codeBuffer.append(";\n");
+                if(foundVar.type.equals("string") && !(node.expressions.get(i).node1 instanceof IdNode))
+                {
+                    codeBuffer.append(currentIndent + "charPointers[indexPointer] = ");
+                    codeBuffer.append((foundVar.isOut ? "*" : "") + foundVar.name);
+                    codeBuffer.append(";\n");
+                    codeBuffer.append(currentIndent + "indexPointer++;\n");
+                }
                 currentId++;
             }
             else
             {
                 FunCallNode funCallNode = (FunCallNode) node.expressions.get(i).node1;
+
                 Record foundFunc = top.getFromTypeEnvironment(funCallNode.functionName);
-                codeBuffer.append(currentIndent + funCallNode.functionName + "(");
-                if(funCallNode.arguments != null)
+                if(foundFunc.returnTypes.size() == 1)
                 {
-                    for(ExprNode exprNode : funCallNode.arguments)
-                    {
-                        String name = (String) exprNode.accept(this);
-                        Record found = top.getFromTypeEnvironment(name);
-                        if(found != null)
-                            if(found.isOut)
-                            {
-                                codeBuffer.replace(codeBuffer.length() - name.length(), codeBuffer.length(), ""); //to put * before
-                                codeBuffer.append("*" + name);
-                            }
-                        codeBuffer.append(", ");
-                    }
+                    foundVar = top.getFromTypeEnvironment(node.ids.get(currentId).name);
+                    codeBuffer.append(currentIndent + (foundVar.isOut ? "*" : ""));
+                    node.ids.get(currentId).accept(this);
+                    currentId++;
+                    codeBuffer.append(" = ");
+                }
+                codeBuffer.append((foundFunc.returnTypes.size() == 1 ? "" : currentIndent) + funCallNode.functionName + "(");
+
+                for(ExprNode exprNode : funCallNode.arguments)
+                {
+                    String name = (String) exprNode.accept(this);
+                    Record found = top.getFromTypeEnvironment(name);
+                    if(found != null)
+                        if(found.isOut)
+                        {
+                            codeBuffer.replace(codeBuffer.length() - name.length(), codeBuffer.length(), ""); //to put * before
+                            codeBuffer.append("*" + name);
+                        }
+                    codeBuffer.append(", ");
                 }
 
-                for(String returnType : foundFunc.returnTypes)
+
+                for(int j = 0; j < foundFunc.returnTypes.size() && foundFunc.returnTypes.size() > 1; j++)
                 {
-                    Record foundVar = top.getFromTypeEnvironment(node.ids.get(currentId).name);
+                    foundVar = top.getFromTypeEnvironment(node.ids.get(currentId).name);
                     codeBuffer.append((foundVar.isOut ? "" : "&"));
                     node.ids.get(currentId).accept(this);
                     codeBuffer.append(", ");
                     currentId++;
                 }
 
-                codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
+                if(funCallNode.arguments.size() > 0)
+                    codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
                 codeBuffer.append(");\n");
+
+                if(foundVar.type.equals("string"))
+                {
+                    codeBuffer.append(currentIndent + "charPointers[indexPointer] = ");
+                    codeBuffer.append((foundVar.isOut ? "*" : "") + foundVar.name);
+                    codeBuffer.append(";\n");
+                    codeBuffer.append(currentIndent + "indexPointer++;\n");
+                }
             }
         }
         return "";
     }
 
-    @Override //TODO check correctness of else if and else
+    @Override
     public Object visit(IfStatementNode node) {
         codeBuffer.append(currentIndent + "if(");
         node.condition.accept(this); //append condition
@@ -251,12 +344,15 @@ public class CodeGeneratorVisitor implements Visitor{
 
         node.thenBody.accept(this);
 
-        if(node.elifs != null)
-            for(ElifNode elifNode : node.elifs)
-                elifNode.accept(this);
+        for(ElifNode elifNode : node.elifs)
+            elifNode.accept(this);
 
         if(node.elseBody != null)
+        {
+            codeBuffer.append(currentIndent + "else\n");
             node.elseBody.accept(this);
+
+        }
 
 
         return "";
@@ -266,13 +362,13 @@ public class CodeGeneratorVisitor implements Visitor{
     public Object visit(ProcCallNode node) {
         codeBuffer.append(currentIndent + node.procedureName + "(");
 
-        if(node.arguments != null)
-        {
-            for(ProcArgumentNode procArgumentNode : node.arguments)
-                procArgumentNode.accept(this);
 
+        for(ProcArgumentNode procArgumentNode : node.arguments)
+            procArgumentNode.accept(this);
+
+        if(!node.arguments.isEmpty())
             codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
-        }
+
 
         codeBuffer.append(");\n");
 
@@ -307,11 +403,12 @@ public class CodeGeneratorVisitor implements Visitor{
                 else
                 {
                     codeBuffer.append(currentIndent + "fflush(stdin);\n");
-                    codeBuffer.append(currentIndent + "getline(" + (idNode.isOut ? "" : "&"));
+                    codeBuffer.append(currentIndent + "readInput(" + (idNode.isOut ? "" : "&"));
                     idNode.accept(this);
-                    codeBuffer.append(", &len, stdin");
+                    //codeBuffer.append(", &len, stdin");
                     codeBuffer.append(");\n");
 
+                    /*
                     codeBuffer.append(currentIndent);
                     if(idNode.isOut)
                     {
@@ -324,7 +421,7 @@ public class CodeGeneratorVisitor implements Visitor{
                     codeBuffer.append("[strcspn(");
                     codeBuffer.append((idNode.isOut ? "*" : ""));
                     idNode.accept(this);
-                    codeBuffer.append(", \"\\n\")] = '\\0';\n");
+                    codeBuffer.append(", \"\\n\")] = '\\0';\n");*/
 
                 }
                     //codeBuffer.append(currentIndent + "asprintf(" + (idNode.isOut ? "" : "&") + idNode.accept(this) + ", \"%s\"")
@@ -336,12 +433,27 @@ public class CodeGeneratorVisitor implements Visitor{
 
     @Override
     public Object visit(ReturnStatementNode node) {
-        for(int i = 0; i < node.returnExpressions.size(); i++)
+        for(int i = 0; i < node.returnExpressions.size() && node.returnExpressions.size() > 1; i++)
         {
             codeBuffer.append(currentIndent + "*return" + (i+1) + " = ");
             node.returnExpressions.get(i).accept(this);
             codeBuffer.append(";\n");
         }
+
+        if(node.returnExpressions.size() == 1)
+        {
+            codeBuffer.append(currentIndent + "return ");
+            if(node.returnExpressions.get(0).nodeType.equals("string"))
+            {
+                codeBuffer.append("strdup(");
+                node.returnExpressions.get(0).accept(this);
+                codeBuffer.append(")");
+            }
+            else
+                node.returnExpressions.get(0).accept(this);
+            codeBuffer.append(";\n");
+        }
+
 
         return "";
     }
@@ -357,7 +469,28 @@ public class CodeGeneratorVisitor implements Visitor{
         return "";
     }
 
-    @Override //TODO FREE MEMORY?
+    @Override
+    public Object visit(ForStatementNode node) {
+        codeBuffer.append(currentIndent + "for(");
+
+        node.init.accept(this);
+        codeBuffer.replace(codeBuffer.length() - 1, codeBuffer.length(), "");
+        codeBuffer.append(" ");
+
+        codeBuffer.append(node.variableName + " <= ");
+        node.toInt.accept(this);
+        codeBuffer.append("; ");
+
+        codeBuffer.append(node.variableName + " = " + node.variableName + " + ");
+        node.step.accept(this);
+        codeBuffer.append(")\n");
+
+        node.body.accept(this);
+
+        return "";
+    }
+
+    @Override
     public Object visit(WriteStatementNode node) {
         codeBuffer.append(currentIndent + "printf(\"");
         for(ExprNode exprNode : node.expressions)
@@ -430,7 +563,12 @@ public class CodeGeneratorVisitor implements Visitor{
 
     @Override
     public Object visit(ConstNode node) {
-        codeBuffer.append((node.value.getClass().getSimpleName().equals("String") ? "\"" : "") + node.value + (node.value.getClass().getSimpleName().equals("String") ? "\"" : ""));
+        codeBuffer.append((node.value.getClass().getSimpleName().equals("String") ? "\"" : ""));
+        codeBuffer.append((node.value.getClass().getSimpleName().equals("Character") ? "'" : ""));
+        codeBuffer.append(node.value);
+        codeBuffer.append((node.value.getClass().getSimpleName().equals("String") ? "\"" : ""));
+        codeBuffer.append((node.value.getClass().getSimpleName().equals("Character") ? "'" : ""));
+
 
         return node.value.toString();
     }
@@ -481,6 +619,8 @@ public class CodeGeneratorVisitor implements Visitor{
         ExprNode exprNode2 = (ExprNode) node.node2;
         boolean isOut1 = false;
         boolean isOut2 = false;
+        boolean isConst1 = false;
+        boolean isConst2 = false;
         if(exprNode1.node1 instanceof IdNode)
         {
             Record found = top.getFromTypeEnvironment(((IdNode) exprNode1.node1).name);
@@ -494,6 +634,12 @@ public class CodeGeneratorVisitor implements Visitor{
                 isOut2 = true;
         }
 
+        if(exprNode1.node1 instanceof ConstNode)
+            isConst1 = true;
+        if(exprNode2.node1 instanceof ConstNode)
+            isConst2 = true;
+
+
         if(exprNode1.nodeType.equals("string") && exprNode2.nodeType.equals("string") && (node.operator.equals("eq") || node.operator.equals("ne") || node.operator.equals("add")))
         {
             if(node.operator.equals("add"))
@@ -501,10 +647,10 @@ public class CodeGeneratorVisitor implements Visitor{
                 codeBuffer.append("strcat(");
 
                 if(isOut1) codeBuffer.append("*");
-                else
+                else if(isConst1)
                     codeBuffer.append("strdup(");
                 exprNode1.accept(this);
-                if(!isOut1)
+                if(!isOut1 && isConst1)
                     codeBuffer.append(")");
                 codeBuffer.append(", ");
                 if(isOut2) codeBuffer.append("*");
@@ -531,11 +677,92 @@ public class CodeGeneratorVisitor implements Visitor{
             return "";
         }
 
+        if( node.operator.equals("add") && ((exprNode1.nodeType.equals("string") && (exprNode2.nodeType.equals("integer") || exprNode2.nodeType.equals("real") || exprNode2.nodeType.equals("boolean")))
+         || (exprNode2.nodeType.equals("string") && (exprNode1.nodeType.equals("integer") || exprNode1.nodeType.equals("real") || exprNode1.nodeType.equals("boolean")))))
+        {
+            codeBuffer.append("strcat(");
+
+            if(exprNode1.nodeType.equals("string"))
+            {
+                if(isOut1) codeBuffer.append("*");
+                else if(isConst1)
+                    codeBuffer.append("strdup(");
+                exprNode1.accept(this);
+                if(!isOut1 && isConst1)
+                    codeBuffer.append(")");
+                codeBuffer.append(", ");
+
+                if(exprNode2.nodeType.equals("integer"))
+                {
+                    codeBuffer.append("convert_and_printI(");
+                    if(isOut2) codeBuffer.append("*");
+                    exprNode2.accept(this);
+                    codeBuffer.append(")");
+                }
+
+                if(exprNode2.nodeType.equals("real"))
+                {
+                    codeBuffer.append("convert_and_printF(");
+                    if(isOut2) codeBuffer.append("*");
+                    exprNode2.accept(this);
+                    codeBuffer.append(")");
+                }
+
+                if(exprNode2.nodeType.equals("boolean"))
+                {
+                    codeBuffer.append("convert_and_printB(");
+                    if(isOut2) codeBuffer.append("*");
+                    exprNode2.accept(this);
+                    codeBuffer.append(")");
+                }
+            }
+
+            if(exprNode2.nodeType.equals("string"))
+            {
+                if(exprNode1.nodeType.equals("integer"))
+                {
+                    codeBuffer.append("convert_and_printI(");
+                    if(isOut1) codeBuffer.append("*");
+                    exprNode1.accept(this);
+                    codeBuffer.append(")");
+                }
+                else if(exprNode1.nodeType.equals("real"))
+                {
+                    codeBuffer.append("convert_and_printF(");
+                    if(isOut1) codeBuffer.append("*");
+                    exprNode1.accept(this);
+                    codeBuffer.append(")");
+                }
+                else if(exprNode1.nodeType.equals("boolean"))
+                {
+                    codeBuffer.append("convert_and_printB(");
+                    if(isOut1) codeBuffer.append("*");
+                    exprNode1.accept(this);
+                    codeBuffer.append(")");
+                }
+
+                codeBuffer.append(", ");
+
+                if(isOut2) codeBuffer.append("*");
+                else if(isConst2)
+                    codeBuffer.append("strdup(");
+                exprNode2.accept(this);
+                if(!isOut2 && isConst2)
+                    codeBuffer.append(")");
+                codeBuffer.append(", ");
+            }
+
+            codeBuffer.append(")");
+
+            return "";
+        }
+
         if(isOut1) codeBuffer.append("*");
         node.node1.accept(this);
         switch(node.operator) {
             case "add":
-                codeBuffer.append(" + ");
+                if(!exprNode1.nodeType.equals("string") && !exprNode2.nodeType.equals("string"))
+                    codeBuffer.append(" + ");
                 break;
 
             case "sub":
@@ -590,17 +817,20 @@ public class CodeGeneratorVisitor implements Visitor{
 
     @Override
     public Object visit(FunCallNode node) {
-        codeBuffer.append(currentIndent + node.functionName + "(");
+        codeBuffer.append(node.functionName + "(");
 
-        if(node.arguments != null)
+
+        for(ExprNode exprNode : node.arguments)
         {
-            for(ExprNode exprNode : node.arguments)
-                exprNode.accept(this);
-
-            codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
+            exprNode.accept(this);
+            codeBuffer.append(", ");
         }
 
-        codeBuffer.append(");\n");
+        if(!node.arguments.isEmpty())
+            codeBuffer.replace(codeBuffer.length() -2, codeBuffer.length(), ""); //remove extra comma
+
+
+        codeBuffer.append(")");
 
         return "";
     }
@@ -627,8 +857,6 @@ public class CodeGeneratorVisitor implements Visitor{
     }
 
 
-
-
     private String getTypeInC(String type)
     {
         boolean out = type.contains("out");
@@ -642,6 +870,10 @@ public class CodeGeneratorVisitor implements Visitor{
             } else if (type.contains("string")) {
                 return "char*";
             }
+             else if(type.contains("char"))
+            {
+                return "char";
+            }
         } else {
             if (type.contains("integer")) {
                 return "int*";
@@ -651,6 +883,9 @@ public class CodeGeneratorVisitor implements Visitor{
                 return "float*";
             } else if (type.contains("string")) {
                 return "char**";
+            } else if (type.contains("char"))
+            {
+                return "char*";
             }
         }
         return null;
@@ -666,6 +901,10 @@ public class CodeGeneratorVisitor implements Visitor{
             return "%f";
         } else if (type.contains("string")) {
             return "%s";
+        }
+        else if (type.contains("char"))
+        {
+            return "%c";
         }
 
         return null;
@@ -686,5 +925,10 @@ public class CodeGeneratorVisitor implements Visitor{
         output.println(codeBuffer.toString());
 
         return codeBuffer.toString();
+    }
+
+    public String getC()
+    {
+        return this.codeBuffer.toString();
     }
 }

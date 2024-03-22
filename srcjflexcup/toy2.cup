@@ -12,16 +12,17 @@ terminal VAR, SEMI, COLON, ASSIGN, COMMA, ENDVAR,
          TRUE, FALSE, FUNCTION, ENDFUNCTION, LPAR, RPAR, TYPERETURN, PROCEDURE, ENDPROCEDURE,
          OUT, IF, THEN, ELSE, ENDIF, ELIF, WHILE, DO, ENDWHILE, WRITE, WRITERETURN,
          DOLLARSIGN, READ, REF, PLUS, MINUS, TIMES, DIV, EQ, NE, LT, LE, GT, GE, AND, OR, NOT, REAL,
-         INTEGER, STRING, BOOLEAN, RETURN;
+         INTEGER, STRING, BOOLEAN, RETURN, FOR, TO, STEP, ENDFOR, CHAR;
 terminal String ID, STRING_CONST;
 terminal String INTEGER_CONST;
 terminal String REAL_CONST;
+terminal String CHAR_CONST;
 
 
 non terminal Program, Iter1, Iter2, VarDecl, Decls, Ids, Consts, Const, Type, Function, FuncParams,
               OtherFuncParams, Procedure, ProcParams, OtherProcParams, ProcParamId, Body,
               Stat, FunCall, ProcCall, IfStat, Elifs, Elif, Else, WhileStat, IOArgs,
-              ProcExprs, Exprs, Expr, Types;
+              ProcExprs, Exprs, Expr, Types, ForStat;
 
 precedence left OR;
 precedence left AND;
@@ -81,6 +82,7 @@ Consts ::= Const:c COMMA Consts:consts {:((ArrayList<ConstNode>) consts).add(0, 
 Const ::= REAL_CONST:value {:RESULT = new ConstNode(Float.parseFloat(value));:}
 	| INTEGER_CONST:value {:RESULT = new ConstNode(Integer.parseInt(value));:}
 	| STRING_CONST:value {:RESULT = new ConstNode((String) value);:}
+	| CHAR_CONST:value   {:Character c = ((String) value).charAt(0); RESULT = new ConstNode((Character) c);:}
 	| TRUE                  {:RESULT = new ConstNode(true);:}
 	| FALSE                 {:RESULT = new ConstNode(false);:}
 	;
@@ -89,6 +91,7 @@ Type ::= REAL:type {:RESULT =  "real";:}
 	| INTEGER:type {:RESULT =  "integer";:}
 	| STRING:type {:RESULT =  "string";:}
 	| BOOLEAN:type {:RESULT =  "boolean";:}
+	| CHAR:type    {:RESULT = "char";:}
 	;
 
 Function ::= FUNCTION ID:name LPAR FuncParams:params RPAR TYPERETURN Types:types COLON Body:b ENDFUNCTION {:RESULT = new FunctionNode((String) name, (ArrayList<IdNode>) params, (ArrayList<String>) types, (BodyNode) b);:}
@@ -131,6 +134,7 @@ Stat ::= Ids:ids ASSIGN Exprs:exprs SEMI {:RESULT = new AssignStatementNode((Arr
 	 | READ IOArgs:args SEMI {:RESULT = new ReadStatementNode((ArrayList<ExprNode>) args);:}
 	 | IfStat:stat SEMI {:RESULT = stat;:}
 	 | WhileStat:stat SEMI {:RESULT = stat;:}
+	 | ForStat:stat SEMI {:RESULT = stat;:}
 	 ;
 
 FunCall ::= ID:name LPAR Exprs:exprs RPAR     {:RESULT = new FunCallNode((String) name, (ArrayList<ExprNode>) exprs);:}
@@ -157,6 +161,8 @@ Else ::= ELSE Body:b {:RESULT =  b;:}
 WhileStat ::= WHILE Expr:e DO Body:b ENDWHILE {: RESULT = new WhileStatementNode((ExprNode) e, (BodyNode) b);:}
            ;
 
+ForStat ::= FOR ID:name ASSIGN Expr:e1 TO Expr:e2 STEP Expr:e3 DO Body:b ENDFOR {: ArrayList<IdNode> idNodes = new ArrayList<IdNode>(); idNodes.add(0, (IdNode) new IdNode((String) name)); ArrayList<ExprNode> exprs = new ArrayList<ExprNode>(); exprs.add(0, (ExprNode) e1); RESULT = new ForStatementNode((String) name, (AssignStatementNode) new AssignStatementNode(idNodes, exprs), (ExprNode) e2, (ExprNode) e3, (BodyNode) b);:}
+          ;
 
 IOArgs ::= Expr:e          {:ArrayList<ExprNode> exprs = new ArrayList<ExprNode>();  exprs.add(0, (ExprNode) e); RESULT = exprs;:}
        | Expr:e1 DOLLARSIGN LPAR Expr:e2 RPAR IOArgs:exprs {:((ExprNode) e2).isDollar = true; ((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e2); ((ArrayList<ExprNode>) exprs).add(0, (ExprNode) e1); RESULT = exprs;:}
@@ -179,6 +185,7 @@ Expr ::= FunCall:fun    {:RESULT = new ExprNode("funcall", (FunCallNode) fun);:}
 	| REAL_CONST:val    {:RESULT = new ExprNode("real", new ConstNode(Float.parseFloat(val)));:}
     | INTEGER_CONST:val {:RESULT = new ExprNode("integer", new ConstNode(Integer.parseInt(val)));:}
 	| STRING_CONST:val  {:RESULT = new ExprNode("string", new ConstNode((String) val));:}
+	| CHAR_CONST: val   {:Character c = ((String) val).charAt(0); RESULT = new ExprNode("char", new ConstNode((Character) c));:}
 	| ID:name            {:RESULT = new ExprNode("id", new IdNode((String) name));:}
     | TRUE              {:RESULT = new ExprNode("true", new ConstNode(true));:}
     | FALSE             {:RESULT = new ExprNode("false", new ConstNode(false));:}

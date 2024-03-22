@@ -118,14 +118,13 @@ public class XMLVisitor implements Visitor{
         Text text = (Text) document.createTextNode(node.name);
         functionElement.appendChild(text);
 
-        if(node.parameters != null)
+
+        for(IdNode idNode : node.parameters)
         {
-            for(IdNode idNode : node.parameters)
-            {
-                e = (Element) idNode.accept(this);
-                functionElement.appendChild(e);
-            }
+            e = (Element) idNode.accept(this);
+            functionElement.appendChild(e);
         }
+
 
         for(String returns : node.returnTypes)
         {
@@ -147,14 +146,13 @@ public class XMLVisitor implements Visitor{
         Text text = (Text) document.createTextNode(node.name);
         procedureElement.appendChild(text);
 
-        if(node.parameters != null)
+
+        for(IdNode idNode : node.parameters)
         {
-            for(IdNode idNode : node.parameters)
-            {
-                e = (Element) idNode.accept(this);
-                procedureElement.appendChild(e);
-            }
+            e = (Element) idNode.accept(this);
+            procedureElement.appendChild(e);
         }
+
 
         e = (Element) node.body.accept(this);
         procedureElement.appendChild(e);
@@ -193,14 +191,13 @@ public class XMLVisitor implements Visitor{
         e = (Element) node.thenBody.accept(this);
         ifStatElement.appendChild(e);
 
-        if(node.elifs != null)
+
+        for(ElifNode elifNode : node.elifs)
         {
-            for(ElifNode elifNode : node.elifs)
-            {
-                e = (Element) elifNode.accept(this);
-                ifStatElement.appendChild(e);
-            }
+            e = (Element) elifNode.accept(this);
+            ifStatElement.appendChild(e);
         }
+
 
         if(node.elseBody != null)
         {
@@ -398,5 +395,10 @@ public class XMLVisitor implements Visitor{
         }
 
         return procArgumentElement;
+    }
+
+    @Override
+    public Object visit(ForStatementNode node) {
+        return null;
     }
 }

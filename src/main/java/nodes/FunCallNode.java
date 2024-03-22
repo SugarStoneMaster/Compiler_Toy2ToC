@@ -2,7 +2,9 @@ package nodes;
 
 import visitor.Visitor;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class FunCallNode extends Node {
     public String functionName;
@@ -11,7 +13,7 @@ public class FunCallNode extends Node {
 
     public FunCallNode(String functionName, List<ExprNode> arguments) {
         this.functionName = functionName;
-        this.arguments = arguments;
+        this.arguments = Objects.requireNonNullElseGet(arguments, ArrayList::new);
     }
 
     @Override

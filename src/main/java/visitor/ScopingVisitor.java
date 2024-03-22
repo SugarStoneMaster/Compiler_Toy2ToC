@@ -23,7 +23,7 @@ public class ScopingVisitor implements Visitor{
         top = new Environment(null); //entering global scope
         top.table.name = "Globals";
         allSymbols = new HashSet<>();
-        langKeywords = new ArrayList<>(Arrays.asList("len", "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "int", "long", "register", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while"));
+        langKeywords = new ArrayList<>(Arrays.asList("charPointers", "indexPointer", "freeAll", "len", "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "int", "long", "register", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while"));
     }
 
     @Override
@@ -70,6 +70,7 @@ public class ScopingVisitor implements Visitor{
                 ConstNode constNode = node.initialValues.get(i);
                 String type = constNode.value.getClass().getSimpleName().toLowerCase();
                 if(type.equals("float")) type = "real";
+                if(type.equals("character")) type = "char";
 
                 top.addId(idNode.name, "variable", type, idNode.isOut, idNode.isFuncParam);
             }
@@ -82,17 +83,15 @@ public class ScopingVisitor implements Visitor{
     public Object visit(FunctionNode node) {
         ArrayList<String> types = new ArrayList<>();
         ArrayList<String> returnTypes =  (ArrayList<String>) node.returnTypes;
-        if(node.parameters != null)
-            for(IdNode idNode : node.parameters)
-                types.add(idNode.idType);
+        for(IdNode idNode : node.parameters)
+            types.add(idNode.idType);
 
         top.addId(node.name, "function", types, returnTypes);
 
         top = (Environment) node.body.accept(this); //enter scope
         top.table.name = node.name;
-        if(node.parameters != null)
-            for(IdNode idNode : node.parameters)
-                top.addId(idNode.name, "variable", idNode.idType, idNode.isOut, idNode.isFuncParam);
+        for(IdNode idNode : node.parameters)
+            top.addId(idNode.name, "variable", idNode.idType, idNode.isOut, idNode.isFuncParam);
 
         allSymbols.addAll(top.getAllSymbolsFromTypeEnvironment());
         top.removeLangKeywords(allSymbols, langKeywords);
@@ -106,17 +105,15 @@ public class ScopingVisitor implements Visitor{
     @Override
     public Object visit(ProcedureNode node) {
         ArrayList<String> types = new ArrayList<>();
-        if(node.parameters != null)
-            for(IdNode idNode : node.parameters)
-                types.add(idNode.isOut ? "out " + idNode.idType : idNode.idType);
+        for(IdNode idNode : node.parameters)
+            types.add(idNode.isOut ? "out " + idNode.idType : idNode.idType);
 
         top.addId(node.name, "procedure", types);
 
         top = (Environment) node.body.accept(this); //enter scope
         top.table.name = node.name;
-        if(node.parameters != null)
-            for(IdNode idNode : node.parameters)
-                top.addId(idNode.name, "variable", idNode.idType, idNode.isOut, idNode.isFuncParam);
+        for(IdNode idNode : node.parameters)
+            top.addId(idNode.name, "variable", idNode.idType, idNode.isOut, idNode.isFuncParam);
 
         allSymbols.addAll(top.getAllSymbolsFromTypeEnvironment());
         top.removeLangKeywords(allSymbols, langKeywords);
@@ -139,11 +136,10 @@ public class ScopingVisitor implements Visitor{
         node.thenBody.environment = top;
         top = top.exitScope();
 
-        if(node.elifs != null)
-        {
-            for(ElifNode elifNode : node.elifs)
-                elifNode.accept(this);
-        }
+
+        for(ElifNode elifNode : node.elifs)
+            elifNode.accept(this);
+
 
         if(node.elseBody != null)
         {
@@ -175,6 +171,16 @@ public class ScopingVisitor implements Visitor{
     public Object visit(WhileStatementNode node) {
         top = (Environment) node.body.accept(this); //enter scope
         top.table.name = "while";
+        node.body.environment = top;
+        top = top.exitScope();
+
+        return null;
+    }
+
+    @Override
+    public Object visit(ForStatementNode node) {
+        top = (Environment) node.body.accept(this); //enter scope
+        top.table.name = "for";
         node.body.environment = top;
         top = top.exitScope();
 
